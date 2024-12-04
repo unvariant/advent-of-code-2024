@@ -3,6 +3,7 @@ use super::*;
 static DIGIT_LUT: [u8x16; 1 << 7] =
     unsafe { std::mem::transmute(*include_bytes!("day3-digit.bin")) };
 
+#[export_name = "part1"]
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn count(s: &[u8]) -> u64 {
     let mut ptr = s.as_ptr();
@@ -43,10 +44,11 @@ unsafe fn count(s: &[u8]) -> u64 {
         // let c3 = (ptr.add(2 + 32 * 3) as *const u8x32).read_unaligned();
         // let d3 = (ptr.add(3 + 32 * 3) as *const u8x32).read_unaligned();
 
-        let mask0 = a0.simd_eq(m).to_bitmask()
-            & b0.simd_eq(u).to_bitmask()
-            & c0.simd_eq(l).to_bitmask()
-            & d0.simd_eq(p).to_bitmask();
+        const HASH: u8 = ((b'm' as u32 * 2) + b'u' as u32 + b'l' as u32 + b'(' as u32) as u8;
+        let tmp: u8x32 = _mm256_slli_epi64(a0.into(), 1).into();
+        let hash0 = tmp + b0 + c0 + d0;
+        let mask0 = hash0.simd_eq(Simd::splat(HASH)).to_bitmask();
+        // a0.simd_eq(m) & b0.simd_eq(u).to_bitmask() & c0.simd_eq(l).to_bitmask() & d0.simd_eq(p).to_bitmask();
         // let mask1 = a1.simd_eq(m).to_bitmask()
         //     & b1.simd_eq(u).to_bitmask()
         //     & c1.simd_eq(l).to_bitmask()
