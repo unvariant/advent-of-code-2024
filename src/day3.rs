@@ -101,20 +101,20 @@ unsafe fn count(s: &[u8]) -> u64 {
 
             let offset = idx as usize;
             let part = (ptr.add(offset) as *const u8x16).read_unaligned();
-            let digits = part - ascii_zero;
+            let digits = (part - ascii_zero) & digit_mask;
 
             // n n n , n n n )
             // 1 2 3 4 5 6 7 8
 
-            // let lt: u8x16 = _mm_cmplt_epi8(digits.into(), ten.into()).into();
+            let lt: u8x16 = _mm_cmplt_epi8(digits.into(), ten.into()).into();
             // println!("{:?}", digits);
-            // let positions = (_mm_movemask_epi8(lt.into()) as usize & (0b01111111 << 4)) >> 4;
+            let m = (_mm_movemask_epi8(lt.into()) as usize & (0b01111111 << 4)) >> 4;
 
-            const CONTROL: i32 =
-                _SIDD_UBYTE_OPS | _SIDD_CMP_RANGES | _SIDD_BIT_MASK | _SIDD_LEAST_SIGNIFICANT;
-            let positions: u32x4 =
-                _mm_cmpestrm::<CONTROL>(range.into(), 2, digits.into(), 16).into();
-            let m = (positions[0] as usize & (0b01111111 << 4)) >> 4;
+            // const CONTROL: i32 =
+            //     _SIDD_UBYTE_OPS | _SIDD_CMP_RANGES | _SIDD_BIT_MASK | _SIDD_LEAST_SIGNIFICANT;
+            // let positions: u32x4 =
+            //     _mm_cmpestrm::<CONTROL>(range.into(), 2, digits.into(), 16).into();
+            // let m = (positions[0] as usize & (0b01111111 << 4)) >> 4;
 
             // println!(
             //     "{:?} {:032b} {}",
