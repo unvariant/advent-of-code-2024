@@ -4,7 +4,6 @@ static DIGIT_LUT: [u8x16; 1 << 7] =
     unsafe { std::mem::transmute(*include_bytes!("day3-digit.bin")) };
 static SEP_LUT: [u8x16; 1 << 8] = unsafe { std::mem::transmute(*include_bytes!("day3-sep.bin")) };
 
-#[export_name = "part1"]
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn count(s: &str) -> u64 {
     let mut ptr = s.as_bytes().as_ptr();
