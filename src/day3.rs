@@ -21,7 +21,8 @@ unsafe fn count(s: &[u8]) -> u64 {
         Simd::from_array([1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0]);
     const HASH: u8 = ((b'm' as u32 * 2) + b'u' as u32 + b'l' as u32 + b'(' as u32) as u8;
     let target: u8x32 = Simd::splat(HASH);
-    let valid_mask: u64x2 = Simd::from_array([0xffffffffffffffff, 0]);
+    let valid_mask: u8x16 =
+        Simd::from_array([0, 0, 0, 0xff, 0, 0, 0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0]);
     let digit_mask: u8x16 = Simd::splat(0x7f);
     let range: u8x16 = Simd::from_array([0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     let mut sum: u64x2 = Simd::splat(0);
@@ -37,15 +38,15 @@ unsafe fn count(s: &[u8]) -> u64 {
         let c1 = (ptr.add(2 + 32 * 1) as *const u8x32).read_unaligned();
         let d1 = (ptr.add(3 + 32 * 1) as *const u8x32).read_unaligned();
 
-        let a2 = (ptr.add(0 + 32 * 2) as *const u8x32).read_unaligned();
-        let b2 = (ptr.add(1 + 32 * 2) as *const u8x32).read_unaligned();
-        let c2 = (ptr.add(2 + 32 * 2) as *const u8x32).read_unaligned();
-        let d2 = (ptr.add(3 + 32 * 2) as *const u8x32).read_unaligned();
+        // let a2 = (ptr.add(0 + 32 * 2) as *const u8x32).read_unaligned();
+        // let b2 = (ptr.add(1 + 32 * 2) as *const u8x32).read_unaligned();
+        // let c2 = (ptr.add(2 + 32 * 2) as *const u8x32).read_unaligned();
+        // let d2 = (ptr.add(3 + 32 * 2) as *const u8x32).read_unaligned();
 
-        let a3 = (ptr.add(0 + 32 * 3) as *const u8x32).read_unaligned();
-        let b3 = (ptr.add(1 + 32 * 3) as *const u8x32).read_unaligned();
-        let c3 = (ptr.add(2 + 32 * 3) as *const u8x32).read_unaligned();
-        let d3 = (ptr.add(3 + 32 * 3) as *const u8x32).read_unaligned();
+        // let a3 = (ptr.add(0 + 32 * 3) as *const u8x32).read_unaligned();
+        // let b3 = (ptr.add(1 + 32 * 3) as *const u8x32).read_unaligned();
+        // let c3 = (ptr.add(2 + 32 * 3) as *const u8x32).read_unaligned();
+        // let d3 = (ptr.add(3 + 32 * 3) as *const u8x32).read_unaligned();
 
         // let b0 = a0.rotate_elements_left::<1>();
         // let c0 = a0.rotate_elements_left::<2>();
@@ -72,24 +73,24 @@ unsafe fn count(s: &[u8]) -> u64 {
             & b1.simd_eq(u).to_bitmask()
             & c1.simd_eq(l).to_bitmask()
             & d1.simd_eq(p).to_bitmask();
-        let mask2 = a2.simd_eq(m).to_bitmask()
-            & b2.simd_eq(u).to_bitmask()
-            & c2.simd_eq(l).to_bitmask()
-            & d2.simd_eq(p).to_bitmask();
-        let mask3 = a3.simd_eq(m).to_bitmask()
-            & b3.simd_eq(u).to_bitmask()
-            & c3.simd_eq(l).to_bitmask()
-            & d3.simd_eq(p).to_bitmask();
-        let mut mask: u128 = mask0 as u128
-            | ((mask1 as u128) << 32)
-            | ((mask2 as u128) << 64)
-            | ((mask3 as u128) << 96);
-        // let mut mask = mask0 | (mask1 << 32);
+        // let mask2 = a2.simd_eq(m).to_bitmask()
+        //     & b2.simd_eq(u).to_bitmask()
+        //     & c2.simd_eq(l).to_bitmask()
+        //     & d2.simd_eq(p).to_bitmask();
+        // let mask3 = a3.simd_eq(m).to_bitmask()
+        //     & b3.simd_eq(u).to_bitmask()
+        //     & c3.simd_eq(l).to_bitmask()
+        //     & d3.simd_eq(p).to_bitmask();
+        // let mut mask: u128 = mask0 as u128
+        //     | ((mask1 as u128) << 32)
+        //     | ((mask2 as u128) << 64)
+        //     | ((mask3 as u128) << 96);
+        let mut mask = mask0 | (mask1 << 32);
         // let mut mask = mask0 as u32 & ((1 << 29) - 1);
         //
         loop {
             if mask == 0 {
-                ptr = ptr.add(128);
+                ptr = ptr.add(64);
 
                 if ptr < end {
                     continue 'solve;
@@ -128,12 +129,10 @@ unsafe fn count(s: &[u8]) -> u64 {
                 _mm_shuffle_epi8(digits.into(), (*DIGIT_LUT.get_unchecked(m)).into()).into();
             // println!("{:?}", shuffled);
 
-            let test = shuffled & sep_mask;
-            let valid: u64x2 = _mm_cmpeq_epi64(test.into(), seps.into()).into();
-
-            // if _mm_testc_si128(valid.into(), valid_mask.into()) == 0 {
-            //     continue;
-            // }
+            let valid: u64x2 = _mm_cmpeq_epi8(shuffled.into(), seps.into()).into();
+            if _mm_testc_si128(valid.into(), valid_mask.into()) == 0 {
+                continue;
+            }
 
             // println!(
             //     "{:?} {:?} {:?}",
@@ -150,7 +149,7 @@ unsafe fn count(s: &[u8]) -> u64 {
             // println!("{:?} {:?}", nums, other);
             let finish: u64x2 = _mm_mul_epi32(nums.into(), other.into()).into();
 
-            sum += finish & valid;
+            sum += finish;
         }
     }
 }
