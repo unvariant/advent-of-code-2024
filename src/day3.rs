@@ -37,15 +37,15 @@ unsafe fn count(s: &[u8]) -> u64 {
         let c1 = (ptr.add(2 + 32 * 1) as *const u8x32).read_unaligned();
         let d1 = (ptr.add(3 + 32 * 1) as *const u8x32).read_unaligned();
 
-        // let a2 = (ptr.add(0 + 32 * 2) as *const u8x32).read_unaligned();
-        // let b2 = (ptr.add(1 + 32 * 2) as *const u8x32).read_unaligned();
-        // let c2 = (ptr.add(2 + 32 * 2) as *const u8x32).read_unaligned();
-        // let d2 = (ptr.add(3 + 32 * 2) as *const u8x32).read_unaligned();
+        let a2 = (ptr.add(0 + 32 * 2) as *const u8x32).read_unaligned();
+        let b2 = (ptr.add(1 + 32 * 2) as *const u8x32).read_unaligned();
+        let c2 = (ptr.add(2 + 32 * 2) as *const u8x32).read_unaligned();
+        let d2 = (ptr.add(3 + 32 * 2) as *const u8x32).read_unaligned();
 
-        // let a3 = (ptr.add(0 + 32 * 3) as *const u8x32).read_unaligned();
-        // let b3 = (ptr.add(1 + 32 * 3) as *const u8x32).read_unaligned();
-        // let c3 = (ptr.add(2 + 32 * 3) as *const u8x32).read_unaligned();
-        // let d3 = (ptr.add(3 + 32 * 3) as *const u8x32).read_unaligned();
+        let a3 = (ptr.add(0 + 32 * 3) as *const u8x32).read_unaligned();
+        let b3 = (ptr.add(1 + 32 * 3) as *const u8x32).read_unaligned();
+        let c3 = (ptr.add(2 + 32 * 3) as *const u8x32).read_unaligned();
+        let d3 = (ptr.add(3 + 32 * 3) as *const u8x32).read_unaligned();
 
         // let b0 = a0.rotate_elements_left::<1>();
         // let c0 = a0.rotate_elements_left::<2>();
@@ -72,19 +72,19 @@ unsafe fn count(s: &[u8]) -> u64 {
             & b1.simd_eq(u).to_bitmask()
             & c1.simd_eq(l).to_bitmask()
             & d1.simd_eq(p).to_bitmask();
-        // let mask2 = a2.simd_eq(m).to_bitmask()
-        //     & b2.simd_eq(u).to_bitmask()
-        //     & c2.simd_eq(l).to_bitmask()
-        //     & d2.simd_eq(p).to_bitmask();
-        // let mask3 = a3.simd_eq(m).to_bitmask()
-        //     & b3.simd_eq(u).to_bitmask()
-        //     & c3.simd_eq(l).to_bitmask()
-        //     & d3.simd_eq(p).to_bitmask();
-        // let mut mask: u128 = mask0 as u128
-        //     | ((mask1 as u128) << 32)
-        //     | ((mask2 as u128) << 64)
-        //     | ((mask3 as u128) << 96);
-        let mut mask = mask0 | (mask1 << 32);
+        let mask2 = a2.simd_eq(m).to_bitmask()
+            & b2.simd_eq(u).to_bitmask()
+            & c2.simd_eq(l).to_bitmask()
+            & d2.simd_eq(p).to_bitmask();
+        let mask3 = a3.simd_eq(m).to_bitmask()
+            & b3.simd_eq(u).to_bitmask()
+            & c3.simd_eq(l).to_bitmask()
+            & d3.simd_eq(p).to_bitmask();
+        let mut mask: u128 = mask0 as u128
+            | ((mask1 as u128) << 32)
+            | ((mask2 as u128) << 64)
+            | ((mask3 as u128) << 96);
+        // let mut mask = mask0 | (mask1 << 32);
         // let mut mask = mask0 as u32 & ((1 << 29) - 1);
         loop {
             if mask == 0 {
