@@ -94,25 +94,40 @@ unsafe fn scan(s: &[u8]) -> u32 {
     let a16 = u8x16::splat(b'A');
     let s16 = u8x16::splat(b'S');
 
+    let mut row0x32;
+    let mut row1x32 = row32!(ptr.add(141 * 0), x32, m32, a32, s32);
+    let mut row2x32 = row32!(ptr.add(141 * 1), x32, m32, a32, s32);
+    let mut row3x32 = row32!(ptr.add(141 * 2), x32, m32, a32, s32);
+
+    let mut row0x16;
+    let mut row1x16 = row16!(ptr.add(141 * 0 + 125), x16, m16, a16, s16);
+    let mut row2x16 = row16!(ptr.add(141 * 1 + 125), x16, m16, a16, s16);
+    let mut row3x16 = row16!(ptr.add(141 * 2 + 125), x16, m16, a16, s16);
+
     for _ in 0..140 {
         let next = ptr.add(141);
+        row0x32 = row1x32;
+        row1x32 = row2x32;
+        row2x32 = row3x32;
+        row3x32 = row32!(ptr.add(141 * 3), x32, m32, a32, s32);
 
-        let row0 = row32!(ptr.add(141 * 0), x32, m32, a32, s32);
-        let row1 = row32!(ptr.add(141 * 1), x32, m32, a32, s32);
-        let row2 = row32!(ptr.add(141 * 2), x32, m32, a32, s32);
-        let row3 = row32!(ptr.add(141 * 3), x32, m32, a32, s32);
+        row0x16 = row1x16;
+        row1x16 = row2x16;
+        row2x16 = row3x16;
+        row3x16 = row16!(ptr.add(141 * 3 + 125), x16, m16, a16, s16);
 
-        let horizontal_forward = row0.x & (row0.m << 1) & (row0.a << 2) & (row0.s << 3);
-        let horizontal_backward = row0.s & (row0.a << 1) & (row0.m << 2) & (row0.x << 3);
+        let horizontal_forward = row0x32.x & (row0x32.m << 1) & (row0x32.a << 2) & (row0x32.s << 3);
+        let horizontal_backward =
+            row0x32.s & (row0x32.a << 1) & (row0x32.m << 2) & (row0x32.x << 3);
 
-        let vertical_forward = row0.x & row1.m & row2.a & row3.s;
-        let vertical_backward = row0.s & row1.a & row2.m & row3.x;
+        let vertical_forward = row0x32.x & row1x32.m & row2x32.a & row3x32.s;
+        let vertical_backward = row0x32.s & row1x32.a & row2x32.m & row3x32.x;
 
-        let top_left_forward = row0.x & (row1.m >> 1) & (row2.a >> 2) & (row3.s >> 3);
-        let top_left_backward = row0.s & (row1.a >> 1) & (row2.m >> 2) & (row3.x >> 3);
+        let top_left_forward = row0x32.x & (row1x32.m >> 1) & (row2x32.a >> 2) & (row3x32.s >> 3);
+        let top_left_backward = row0x32.s & (row1x32.a >> 1) & (row2x32.m >> 2) & (row3x32.x >> 3);
 
-        let top_right_forward = row0.x & (row1.m << 1) & (row2.a << 2) & (row3.s << 3);
-        let top_right_backward = row0.s & (row1.a << 1) & (row2.m << 2) & (row3.x << 3);
+        let top_right_forward = row0x32.x & (row1x32.m << 1) & (row2x32.a << 2) & (row3x32.s << 3);
+        let top_right_backward = row0x32.s & (row1x32.a << 1) & (row2x32.m << 2) & (row3x32.x << 3);
 
         total += horizontal_forward.count_ones()
             + horizontal_backward.count_ones()
@@ -122,25 +137,22 @@ unsafe fn scan(s: &[u8]) -> u32 {
             + top_left_backward.count_ones()
             + top_right_forward.count_ones()
             + top_right_backward.count_ones();
-
-        let row0 = row16!(ptr.add(141 * 0 + 125), x16, m16, a16, s16);
-        let row1 = row16!(ptr.add(141 * 1 + 125), x16, m16, a16, s16);
-        let row2 = row16!(ptr.add(141 * 2 + 125), x16, m16, a16, s16);
-        let row3 = row16!(ptr.add(141 * 3 + 125), x16, m16, a16, s16);
 
         const MASK: u64 = 0xffffffffffffffffu64 & !0b111u64;
 
-        let horizontal_forward = row0.x & (row0.m << 1) & (row0.a << 2) & (row0.s << 3) & MASK;
-        let horizontal_backward = row0.s & (row0.a << 1) & (row0.m << 2) & (row0.x << 3) & MASK;
+        let horizontal_forward =
+            row0x16.x & (row0x16.m << 1) & (row0x16.a << 2) & (row0x16.s << 3) & MASK;
+        let horizontal_backward =
+            row0x16.s & (row0x16.a << 1) & (row0x16.m << 2) & (row0x16.x << 3) & MASK;
 
-        let vertical_forward = row0.x & row1.m & row2.a & row3.s & MASK;
-        let vertical_backward = row0.s & row1.a & row2.m & row3.x & MASK;
+        let vertical_forward = row0x16.x & row1x16.m & row2x16.a & row3x16.s & MASK;
+        let vertical_backward = row0x16.s & row1x16.a & row2x16.m & row3x16.x & MASK;
 
-        let top_left_forward = row0.x & (row1.m >> 1) & (row2.a >> 2) & (row3.s >> 3);
-        let top_left_backward = row0.s & (row1.a >> 1) & (row2.m >> 2) & (row3.x >> 3);
+        let top_left_forward = row0x16.x & (row1x16.m >> 1) & (row2x16.a >> 2) & (row3x16.s >> 3);
+        let top_left_backward = row0x16.s & (row1x16.a >> 1) & (row2x16.m >> 2) & (row3x16.x >> 3);
 
-        let top_right_forward = row0.x & (row1.m << 1) & (row2.a << 2) & (row3.s << 3);
-        let top_right_backward = row0.s & (row1.a << 1) & (row2.m << 2) & (row3.x << 3);
+        let top_right_forward = row0x16.x & (row1x16.m << 1) & (row2x16.a << 2) & (row3x16.s << 3);
+        let top_right_backward = row0x16.s & (row1x16.a << 1) & (row2x16.m << 2) & (row3x16.x << 3);
 
         total += horizontal_forward.count_ones()
             + horizontal_backward.count_ones()
@@ -150,7 +162,6 @@ unsafe fn scan(s: &[u8]) -> u32 {
             + top_left_backward.count_ones()
             + top_right_forward.count_ones()
             + top_right_backward.count_ones();
-
         ptr = next;
     }
 
