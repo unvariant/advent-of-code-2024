@@ -3,10 +3,7 @@ use super::*;
 static DIGIT_LUT: [u8x16; 1 << 7] =
     unsafe { std::mem::transmute(*include_bytes!("day3-digit.bin")) };
 
-#[cfg(target_feature = "avx512f")]
-compile_error!("WTF");
-
-#[target_feature(enable = "avx2,avx512f,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn count(s: &[u8]) -> u64 {
     let mut ptr = s.as_ptr();
     let end = ptr.add(s.len());
@@ -90,7 +87,8 @@ unsafe fn count(s: &[u8]) -> u64 {
             // 1 2 3 4 5 6 7 8
             let positions = (digits.simd_lt(ten).to_bitmask() as usize & (0b01111111 << 4)) >> 4;
             let shuffled: u8x16 =
-                _mm_shuffle_epi8(digits.into(), DIGIT_LUT[positions].into()).into();
+                _mm_shuffle_epi8(digits.into(), (*DIGIT_LUT.get_unchecked(positions)).into())
+                    .into();
 
             let test = shuffled & sep_mask;
             let valid: u64x2 = _mm_cmpeq_epi64(test.into(), seps.into()).into();
