@@ -14,7 +14,8 @@ unsafe fn count(s: &[u8]) -> u64 {
     let p: u8x32 = Simd::splat('(' as u8);
     let ten: u8x16 = Simd::splat(10);
     let ascii_zero: u8x16 = Simd::splat('0' as u8);
-    let seps: u64x2 = Simd::from_array([(0xfc << 24) | (0xf9 << 56), 0]);
+    // let seps: u64x2 = Simd::from_array([(0xfc << 24) | (0xf9 << 56), 0]);
+    let seps: u64x2 = Simd::from_array([(124 << 24) | (121 << 56), 0]);
     let sep_mask: u8x16 = Simd::from_array([0, 0, 0, 0xff, 0, 0, 0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0]);
     let mul2: u8x16 =
         Simd::from_array([1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0]);
