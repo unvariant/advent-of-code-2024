@@ -5,8 +5,8 @@ static DIGIT_LUT: [u8x16; 1 << 7] =
 static SEP_LUT: [u8x16; 1 << 8] = unsafe { std::mem::transmute(*include_bytes!("day3-sep.bin")) };
 
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
-unsafe fn count(s: &str) -> u64 {
-    let mut ptr = s.as_bytes().as_ptr();
+unsafe fn count(s: &[u8]) -> u64 {
+    let mut ptr = s.as_ptr();
     let end = ptr.add(s.len());
     let m: u8x32 = Simd::splat('m' as u8);
     let u: u8x32 = Simd::splat('u' as u8);
@@ -20,51 +20,87 @@ unsafe fn count(s: &str) -> u64 {
         Simd::from_array([1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0]);
     let mut sum: u64x2 = Simd::splat(0);
 
-    loop {
-        let a = (ptr.add(0) as *const u8x32).read_unaligned();
-        let b = (ptr.add(1) as *const u8x32).read_unaligned();
-        let c = (ptr.add(2) as *const u8x32).read_unaligned();
-        let d = (ptr.add(3) as *const u8x32).read_unaligned();
+    'solve: loop {
+        let a0 = (ptr.add(0 + 32 * 0) as *const u8x32).read_unaligned();
+        let b0 = (ptr.add(1 + 32 * 0) as *const u8x32).read_unaligned();
+        let c0 = (ptr.add(2 + 32 * 0) as *const u8x32).read_unaligned();
+        let d0 = (ptr.add(3 + 32 * 0) as *const u8x32).read_unaligned();
 
-        let mask = a.simd_eq(m).to_bitmask()
-            & b.simd_eq(u).to_bitmask()
-            & c.simd_eq(l).to_bitmask()
-            & d.simd_eq(p).to_bitmask();
-        let idx = (mask as u32).trailing_zeros();
+        let a1 = (ptr.add(0 + 32 * 1) as *const u8x32).read_unaligned();
+        let b1 = (ptr.add(1 + 32 * 1) as *const u8x32).read_unaligned();
+        let c1 = (ptr.add(2 + 32 * 1) as *const u8x32).read_unaligned();
+        let d1 = (ptr.add(3 + 32 * 1) as *const u8x32).read_unaligned();
 
-        let offset = idx as usize % 32 + 4;
-        let part = (ptr.add(offset) as *const u8x16).read_unaligned();
-        let digits = part - ascii_zero;
+        let a2 = (ptr.add(0 + 32 * 2) as *const u8x32).read_unaligned();
+        let b2 = (ptr.add(1 + 32 * 2) as *const u8x32).read_unaligned();
+        let c2 = (ptr.add(2 + 32 * 2) as *const u8x32).read_unaligned();
+        let d2 = (ptr.add(3 + 32 * 2) as *const u8x32).read_unaligned();
 
-        let notfound = (idx == 32) as usize;
-        let found = (idx != 32) as usize;
-        let next = 32 * notfound + offset * found as usize;
+        let a3 = (ptr.add(0 + 32 * 3) as *const u8x32).read_unaligned();
+        let b3 = (ptr.add(1 + 32 * 3) as *const u8x32).read_unaligned();
+        let c3 = (ptr.add(2 + 32 * 3) as *const u8x32).read_unaligned();
+        let d3 = (ptr.add(3 + 32 * 3) as *const u8x32).read_unaligned();
 
-        // n n n , n n n )
-        // 1 2 3 4 5 6 7 8
-        let positions = digits.simd_lt(ten).to_bitmask() as usize & 0b01111111;
-        let separators = !positions & 0xff;
-        let shuffled: u8x16 = _mm_shuffle_epi8(digits.into(), DIGIT_LUT[positions].into()).into();
-        let test: u32x4 = _mm_shuffle_epi8(part.into(), SEP_LUT[separators].into()).into();
-        let valid: u64x2 = _mm_cmpeq_epi64(test.into(), seps.into()).into();
+        let mask0 = a0.simd_eq(m).to_bitmask()
+            & b0.simd_eq(u).to_bitmask()
+            & c0.simd_eq(l).to_bitmask()
+            & d0.simd_eq(p).to_bitmask();
+        let mask1 = a1.simd_eq(m).to_bitmask()
+            & b1.simd_eq(u).to_bitmask()
+            & c1.simd_eq(l).to_bitmask()
+            & d1.simd_eq(p).to_bitmask();
+        let mask2 = a2.simd_eq(m).to_bitmask()
+            & b2.simd_eq(u).to_bitmask()
+            & c2.simd_eq(l).to_bitmask()
+            & d2.simd_eq(p).to_bitmask();
+        let mask3 = a3.simd_eq(m).to_bitmask()
+            & b3.simd_eq(u).to_bitmask()
+            & c3.simd_eq(l).to_bitmask()
+            & d3.simd_eq(p).to_bitmask();
+        let mut mask: u128 = mask0 as u128
+            | ((mask1 as u128) << 32)
+            | ((mask2 as u128) << 64)
+            | ((mask3 as u128) << 96);
+        loop {
+            let idx = mask.trailing_zeros();
+            if idx == 128 {
+                ptr = ptr.add(128);
 
-        let digit2: u16x8 = _mm_maddubs_epi16(shuffled.into(), mul2.into()).into();
-        let digit3: u16x8 = _mm_hadd_epi16(digit2.into(), digit2.into()).into();
-        let nums: u32x4 = _mm_cvtepi16_epi32(digit3.into()).into();
-        let other: u16x8 = _mm_srli_epi64::<32>(digit3.into()).into();
-        let finish: u64x2 = _mm_mul_epi32(nums.into(), other.into()).into();
+                if ptr >= end {
+                    return sum[0] as u64;
+                }
 
-        sum += finish & valid;
+                continue 'solve;
+            }
 
-        ptr = ptr.add(next);
-        if ptr >= end {
-            return sum[0] as u64;
+            mask &= mask - 1;
+
+            let offset = idx as usize % 128 + 4;
+            let part = (ptr.add(offset) as *const u8x16).read_unaligned();
+            let digits = part - ascii_zero;
+
+            // n n n , n n n )
+            // 1 2 3 4 5 6 7 8
+            let positions = digits.simd_lt(ten).to_bitmask() as usize & 0b01111111;
+            let separators = !positions & 0xff;
+            let shuffled: u8x16 =
+                _mm_shuffle_epi8(digits.into(), DIGIT_LUT[positions].into()).into();
+            let test: u32x4 = _mm_shuffle_epi8(part.into(), SEP_LUT[separators].into()).into();
+            let valid: u64x2 = _mm_cmpeq_epi64(test.into(), seps.into()).into();
+
+            let digit2: u16x8 = _mm_maddubs_epi16(shuffled.into(), mul2.into()).into();
+            let digit3: u16x8 = _mm_hadd_epi16(digit2.into(), digit2.into()).into();
+            let nums: u32x4 = _mm_cvtepi16_epi32(digit3.into()).into();
+            let other: u16x8 = _mm_srli_epi64::<32>(digit3.into()).into();
+            let finish: u64x2 = _mm_mul_epi32(nums.into(), other.into()).into();
+
+            sum += finish & valid;
         }
     }
 }
 
 pub fn part1(s: &str) -> impl Display {
-    unsafe { count(s) }
+    unsafe { count(s.as_bytes()) }
 }
 
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
