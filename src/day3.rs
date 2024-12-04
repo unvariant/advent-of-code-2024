@@ -29,10 +29,10 @@ unsafe fn count(s: &[u8]) -> u64 {
         let c0 = (ptr.add(2 + 32 * 0) as *const u8x32).read_unaligned();
         let d0 = (ptr.add(3 + 32 * 0) as *const u8x32).read_unaligned();
 
-        let a1 = (ptr.add(0 + 32 * 1) as *const u8x32).read_unaligned();
-        let b1 = (ptr.add(1 + 32 * 1) as *const u8x32).read_unaligned();
-        let c1 = (ptr.add(2 + 32 * 1) as *const u8x32).read_unaligned();
-        let d1 = (ptr.add(3 + 32 * 1) as *const u8x32).read_unaligned();
+        // let a1 = (ptr.add(0 + 32 * 1) as *const u8x32).read_unaligned();
+        // let b1 = (ptr.add(1 + 32 * 1) as *const u8x32).read_unaligned();
+        // let c1 = (ptr.add(2 + 32 * 1) as *const u8x32).read_unaligned();
+        // let d1 = (ptr.add(3 + 32 * 1) as *const u8x32).read_unaligned();
 
         // let a2 = (ptr.add(0 + 32 * 2) as *const u8x32).read_unaligned();
         // let b2 = (ptr.add(1 + 32 * 2) as *const u8x32).read_unaligned();
@@ -48,10 +48,10 @@ unsafe fn count(s: &[u8]) -> u64 {
             & b0.simd_eq(u).to_bitmask()
             & c0.simd_eq(l).to_bitmask()
             & d0.simd_eq(p).to_bitmask();
-        let mask1 = a1.simd_eq(m).to_bitmask()
-            & b1.simd_eq(u).to_bitmask()
-            & c1.simd_eq(l).to_bitmask()
-            & d1.simd_eq(p).to_bitmask();
+        // let mask1 = a1.simd_eq(m).to_bitmask()
+        //     & b1.simd_eq(u).to_bitmask()
+        //     & c1.simd_eq(l).to_bitmask()
+        //     & d1.simd_eq(p).to_bitmask();
         // let mask2 = a2.simd_eq(m).to_bitmask()
         //     & b2.simd_eq(u).to_bitmask()
         //     & c2.simd_eq(l).to_bitmask()
@@ -64,11 +64,12 @@ unsafe fn count(s: &[u8]) -> u64 {
         //     | ((mask1 as u128) << 32)
         //     | ((mask2 as u128) << 64)
         //     | ((mask3 as u128) << 96);
-        let mut mask = mask0 | (mask1 << 32);
+        // let mut mask = mask0 | (mask1 << 32);
+        let mut mask = mask0 as u32;
         loop {
             let idx = mask.trailing_zeros();
             if mask == 0 {
-                ptr = ptr.add(64);
+                ptr = ptr.add(32);
 
                 if ptr < end {
                     continue 'solve;
