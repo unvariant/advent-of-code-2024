@@ -21,8 +21,7 @@ unsafe fn count(s: &[u8]) -> u64 {
         Simd::from_array([1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0]);
     const HASH: u8 = ((b'm' as u32 * 2) + b'u' as u32 + b'l' as u32 + b'(' as u32) as u8;
     let target: u8x32 = Simd::splat(HASH);
-    let valid_mask: u8x16 =
-        Simd::from_array([0, 0, 0, 0xff, 0, 0, 0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0]);
+    let valid_mask: u64x2 = Simd::from_array([0xffffffffffffffff, 0]);
     let digit_mask: u8x16 = Simd::splat(0x7f);
     let range: u8x16 = Simd::from_array([0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     let mut sum: u64x2 = Simd::splat(0);
@@ -104,7 +103,18 @@ unsafe fn count(s: &[u8]) -> u64 {
 
             let offset = idx as usize;
             let part = (ptr.add(offset) as *const u8x16).read_unaligned();
-            let digits = (part - ascii_zero) & digit_mask;
+            let digits = (match idx {
+                0 => _mm256_extracti128_si256::<0>(a0.into()).into(),
+                1 => _mm256_extracti128_si256::<0>(b0.into()).into(),
+                2 => _mm256_extracti128_si256::<0>(c0.into()).into(),
+                3 => _mm256_extracti128_si256::<0>(d0.into()).into(),
+                32 => _mm256_extracti128_si256::<0>(a1.into()).into(),
+                33 => _mm256_extracti128_si256::<0>(b1.into()).into(),
+                34 => _mm256_extracti128_si256::<0>(c1.into()).into(),
+                35 => _mm256_extracti128_si256::<0>(d1.into()).into(),
+                _ => part,
+            } - ascii_zero)
+                & digit_mask;
 
             // n n n , n n n )
             // 1 2 3 4 5 6 7 8
@@ -129,10 +139,12 @@ unsafe fn count(s: &[u8]) -> u64 {
                 _mm_shuffle_epi8(digits.into(), (*DIGIT_LUT.get_unchecked(m)).into()).into();
             // println!("{:?}", shuffled);
 
-            let valid: u64x2 = _mm_cmpeq_epi8(shuffled.into(), seps.into()).into();
-            if _mm_testc_si128(valid.into(), valid_mask.into()) == 0 {
-                continue;
-            }
+            let test = shuffled & sep_mask;
+            let valid: u64x2 = _mm_cmpeq_epi64(test.into(), seps.into()).into();
+
+            // if _mm_testc_si128(valid.into(), valid_mask.into()) == 0 {
+            //     continue;
+            // }
 
             // println!(
             //     "{:?} {:?} {:?}",
@@ -149,7 +161,7 @@ unsafe fn count(s: &[u8]) -> u64 {
             // println!("{:?} {:?}", nums, other);
             let finish: u64x2 = _mm_mul_epi32(nums.into(), other.into()).into();
 
-            sum += finish;
+            sum += finish & valid;
         }
     }
 }
