@@ -1,13 +1,16 @@
 use super::*;
 
-static DIGIT_LUT: [u8x16; 1 << 7] =
-    unsafe { std::mem::transmute(*include_bytes!("day3-digit.bin")) };
+#[repr(align(64))]
+struct Aligned([u8x16; 1 << 7]);
+
+static DIGIT_LUT: Aligned = unsafe { std::mem::transmute(*include_bytes!("day3-digit.bin")) };
 
 #[export_name = "part1"]
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn count(s: &[u8]) -> u64 {
-    let mut ptr = s.as_ptr();
-    let end = ptr.add(s.len());
+    let raw = (s.as_ptr() as *const _ as usize) & !((1 << 6) - 1);
+    let mut ptr = raw as *const u8;
+    let end = s.as_ptr().add(s.len());
     let m: u8x32 = Simd::splat('m' as u8);
     let u: u8x32 = Simd::splat('u' as u8);
     let l: u8x32 = Simd::splat('l' as u8);
@@ -15,8 +18,13 @@ unsafe fn count(s: &[u8]) -> u64 {
     let ten: u8x16 = Simd::splat(10);
     let ascii_zero: u8x16 = Simd::splat('0' as u8);
     // let seps: u64x2 = Simd::from_array([(0xfc << 24) | (0xf9 << 56), 0]);
-    let seps: u64x2 = Simd::from_array([(124 << 24) | (121 << 56), 0]);
-    let sep_mask: u8x16 = Simd::from_array([0, 0, 0, 0xff, 0, 0, 0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0]);
+    let seps: u64x2 = Simd::from_array([
+        (124 << 24) | (69 << 32) | (60 << 40) | (120 << 48) | (121 << 56),
+        0,
+    ]);
+    let sep_mask: u8x16 = Simd::from_array([
+        0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0, 0, 0, 0, 0, 0, 0, 0,
+    ]);
     let mul2: u8x16 =
         Simd::from_array([1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0]);
     const HASH: u8 = ((b'm' as u32 * 2) + b'u' as u32 + b'l' as u32 + b'(' as u32) as u8;
@@ -27,12 +35,12 @@ unsafe fn count(s: &[u8]) -> u64 {
     let mut sum: u64x2 = Simd::splat(0);
 
     'solve: loop {
-        let a0 = (ptr.add(0 + 32 * 0) as *const u8x32).read_unaligned();
+        let a0 = (ptr.add(0 + 32 * 0) as *const u8x32).read();
         let b0 = (ptr.add(1 + 32 * 0) as *const u8x32).read_unaligned();
         let c0 = (ptr.add(2 + 32 * 0) as *const u8x32).read_unaligned();
         let d0 = (ptr.add(3 + 32 * 0) as *const u8x32).read_unaligned();
 
-        let a1 = (ptr.add(0 + 32 * 1) as *const u8x32).read_unaligned();
+        let a1 = (ptr.add(0 + 32 * 1) as *const u8x32).read();
         let b1 = (ptr.add(1 + 32 * 1) as *const u8x32).read_unaligned();
         let c1 = (ptr.add(2 + 32 * 1) as *const u8x32).read_unaligned();
         let d1 = (ptr.add(3 + 32 * 1) as *const u8x32).read_unaligned();
@@ -64,14 +72,25 @@ unsafe fn count(s: &[u8]) -> u64 {
 
         // let mask0 = hash0.simd_eq(target).to_bitmask();
         // let mask1 = hash1.simd_eq(target).to_bitmask();
-        let mask0 = a0.simd_eq(m).to_bitmask()
-            & b0.simd_eq(u).to_bitmask()
-            & c0.simd_eq(l).to_bitmask()
-            & d0.simd_eq(p).to_bitmask();
-        let mask1 = a1.simd_eq(m).to_bitmask()
-            & b1.simd_eq(u).to_bitmask()
-            & c1.simd_eq(l).to_bitmask()
-            & d1.simd_eq(p).to_bitmask();
+        // let mask0 = a0.simd_eq(m).to_bitmask()
+        //     & b0.simd_eq(u).to_bitmask()
+        //     & c0.simd_eq(l).to_bitmask()
+        //     & d0.simd_eq(p).to_bitmask();
+        // let mask1 = a1.simd_eq(m).to_bitmask()
+        //     & b1.simd_eq(u).to_bitmask()
+        //     & c1.simd_eq(l).to_bitmask()
+        //     & d1.simd_eq(p).to_bitmask();
+
+        let lo0 = a0.simd_eq(m).to_bitmask() & b0.simd_eq(u).to_bitmask();
+        let hi0 = c0.simd_eq(l).to_bitmask() & d0.simd_eq(p).to_bitmask();
+        let lo1 = a1.simd_eq(m).to_bitmask() & b1.simd_eq(u).to_bitmask();
+        let hi1 = c1.simd_eq(l).to_bitmask() & d1.simd_eq(p).to_bitmask();
+        let mask0 = lo0 & hi0;
+        let mask1 = lo1 & hi1;
+
+        let mask0 = a0.simd_eq(m).to_bitmask();
+        let mask1 = a1.simd_eq(m).to_bitmask();
+
         // let mask2 = a2.simd_eq(m).to_bitmask()
         //     & b2.simd_eq(u).to_bitmask()
         //     & c2.simd_eq(l).to_bitmask()
@@ -90,7 +109,6 @@ unsafe fn count(s: &[u8]) -> u64 {
         loop {
             if mask == 0 {
                 ptr = ptr.add(64);
-                _mm_prefetch::<_MM_HINT_NTA>(ptr as *const _ as *const i8);
 
                 if ptr < end {
                     continue 'solve;
@@ -111,22 +129,9 @@ unsafe fn count(s: &[u8]) -> u64 {
 
             let lt: u8x16 = _mm_cmplt_epi8(digits.into(), ten.into()).into();
             // println!("{:?}", digits);
-            let m = (_mm_movemask_epi8(lt.into()) as usize & (0b01111111 << 4)) >> 4;
-
-            // const CONTROL: i32 =
-            //     _SIDD_UBYTE_OPS | _SIDD_CMP_RANGES | _SIDD_BIT_MASK | _SIDD_LEAST_SIGNIFICANT;
-            // let positions: u32x4 =
-            //     _mm_cmpestrm::<CONTROL>(range.into(), 2, digits.into(), 16).into();
-            // let m = (positions[0] as usize & (0b01111111 << 4)) >> 4;
-
-            // println!(
-            //     "{:?} {:032b} {}",
-            //     lt,
-            //     _mm_movemask_epi8(lt.into()),
-            //     positions
-            // );
+            let m = (_mm_movemask_epi8(lt.into()) as usize >> 4) & (0b01111111);
             let shuffled: u8x16 =
-                _mm_shuffle_epi8(digits.into(), (*DIGIT_LUT.get_unchecked(m)).into()).into();
+                _mm_shuffle_epi8(digits.into(), (*DIGIT_LUT.0.get_unchecked(m)).into()).into();
             // println!("{:?}", shuffled);
 
             let test = shuffled & sep_mask;
@@ -135,13 +140,6 @@ unsafe fn count(s: &[u8]) -> u64 {
             // if _mm_testc_si128(valid.into(), valid_mask.into()) == 0 {
             //     continue;
             // }
-
-            // println!(
-            //     "{:?} {:?} {:?}",
-            //     shuffled,
-            //     test,
-            //     std::mem::transmute::<u64x2, u8x16>(seps)
-            // );
 
             let digit2: u16x8 = _mm_maddubs_epi16(shuffled.into(), mul2.into()).into();
             let nums: u32x4 = _mm_madd_epi16(digit2.into(), u16x8::splat(1).into()).into();
@@ -161,10 +159,16 @@ pub fn part1(s: &str) -> impl Display {
 }
 
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
-unsafe fn switch(s: &str) -> u64 {
+unsafe fn switch(s: &[u8]) -> u64 {
+    let end = s.as_ptr().add(s.len());
+    (end as *const _ as *mut u8).write(b'd');
+    (end as *const _ as *mut u8).write(b'o');
+
+    let end = s.as_ptr().add(s.len()).add(2);
+
     loop {}
 }
 
 pub fn part2(s: &str) -> impl Display {
-    unsafe { switch(s) }
+    unsafe { switch(s.as_bytes()) }
 }

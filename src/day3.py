@@ -25,6 +25,30 @@ for i in range(3):
 
         shuffles[mask] = shuf
 
+# first num
+for i in range(3):
+    # second num
+    for j in range(3):
+        first = (1 << (i + 1)) - 1
+        second = (1 << (j + 1)) - 1
+        mask = first | (second << (i + 2))
+        
+        shuf = [0x80] * 16
+        for k in range(4):
+            if k <= j:
+                # vec[4 + k] = second[k]
+                shuf[8 + k] = 4 + i + 2 + j - k
+            if k <= i:
+                # vec[k] = first[k]
+                shuf[k] = 4 + i - k
+        shuf[4 + 3] = 4 + i + 1 + 1 + j + 1 # close paren
+        shuf[3 + 3] = 3 # open paren
+        shuf[2 + 3] = 2 # l
+        shuf[1 + 3] = 1 # u
+        shuf[0 + 3] = 4 + i + 1 # comma
+
+        shuffles[mask] = shuf
+
 with open("day3-digit.bin", "wb+") as fp:
     for i in range(1 << 7):
         if i in shuffles:
