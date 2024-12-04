@@ -15,3 +15,7 @@ lto = true
 
 [profile.dev.build-override]
 opt-level = 3
+
+[[bench]]
+name = "my_benchmark"
+harness = false
