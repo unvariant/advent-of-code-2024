@@ -86,6 +86,7 @@ unsafe fn count(s: &[u8]) -> u64 {
             | ((mask3 as u128) << 96);
         // let mut mask = mask0 | (mask1 << 32);
         // let mut mask = mask0 as u32 & ((1 << 29) - 1);
+        //
         loop {
             if mask == 0 {
                 ptr = ptr.add(128);
