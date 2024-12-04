@@ -90,6 +90,7 @@ unsafe fn count(s: &[u8]) -> u64 {
         loop {
             if mask == 0 {
                 ptr = ptr.add(64);
+                _mm_prefetch::<_MM_HINT_NTA>(ptr as *const _ as *const i8);
 
                 if ptr < end {
                     continue 'solve;
@@ -103,18 +104,7 @@ unsafe fn count(s: &[u8]) -> u64 {
 
             let offset = idx as usize;
             let part = (ptr.add(offset) as *const u8x16).read_unaligned();
-            let digits = (match idx {
-                0 => _mm256_extracti128_si256::<0>(a0.into()).into(),
-                1 => _mm256_extracti128_si256::<0>(b0.into()).into(),
-                2 => _mm256_extracti128_si256::<0>(c0.into()).into(),
-                3 => _mm256_extracti128_si256::<0>(d0.into()).into(),
-                32 => _mm256_extracti128_si256::<0>(a1.into()).into(),
-                33 => _mm256_extracti128_si256::<0>(b1.into()).into(),
-                34 => _mm256_extracti128_si256::<0>(c1.into()).into(),
-                35 => _mm256_extracti128_si256::<0>(d1.into()).into(),
-                _ => part,
-            } - ascii_zero)
-                & digit_mask;
+            let digits = (part - ascii_zero) & digit_mask;
 
             // n n n , n n n )
             // 1 2 3 4 5 6 7 8
