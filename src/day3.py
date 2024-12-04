@@ -16,10 +16,12 @@ for i in range(3):
         for k in range(4):
             if k <= j:
                 # vec[4 + k] = second[k]
-                shuf[8 + k] = i + 2 + j - k
+                shuf[8 + k] = 4 + i + 2 + j - k
             if k <= i:
                 # vec[k] = first[k]
-                shuf[k] = i - k
+                shuf[k] = 4 + i - k
+        shuf[4 + 3] = 4 + i + 1 + 1 + j + 1
+        shuf[0 + 3] = 4 + i + 1
 
         shuffles[mask] = shuf
 
@@ -38,8 +40,8 @@ for i in range(3):
 
         mask = (1 << comma) | (1 << paren)
         shuf = [0x80] * 16
-        shuf[0] = comma
-        shuf[4] = paren
+        shuf[0] = 4 + comma
+        shuf[4] = 4 + paren
 
         leftover = 8 - mask.bit_length()
         for k in range(1 << leftover):
