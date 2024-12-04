@@ -21,6 +21,8 @@ unsafe fn count(s: &[u8]) -> u64 {
     let sep_mask: u8x16 = Simd::from_array([0, 0, 0, 0xff, 0, 0, 0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0]);
     let mul2: u8x16 =
         Simd::from_array([1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0]);
+    const HASH: u8 = ((b'm' as u32 * 2) + b'u' as u32 + b'l' as u32 + b'(' as u32) as u8;
+    let target: u8x32 = Simd::splat(HASH);
     let mut sum: u64x2 = Simd::splat(0);
 
     'solve: loop {
@@ -29,10 +31,10 @@ unsafe fn count(s: &[u8]) -> u64 {
         let c0 = (ptr.add(2 + 32 * 0) as *const u8x32).read_unaligned();
         let d0 = (ptr.add(3 + 32 * 0) as *const u8x32).read_unaligned();
 
-        // let a1 = (ptr.add(0 + 32 * 1) as *const u8x32).read_unaligned();
-        // let b1 = (ptr.add(1 + 32 * 1) as *const u8x32).read_unaligned();
-        // let c1 = (ptr.add(2 + 32 * 1) as *const u8x32).read_unaligned();
-        // let d1 = (ptr.add(3 + 32 * 1) as *const u8x32).read_unaligned();
+        let a1 = (ptr.add(0 + 32 * 1) as *const u8x32).read_unaligned();
+        let b1 = (ptr.add(1 + 32 * 1) as *const u8x32).read_unaligned();
+        let c1 = (ptr.add(2 + 32 * 1) as *const u8x32).read_unaligned();
+        let d1 = (ptr.add(3 + 32 * 1) as *const u8x32).read_unaligned();
 
         // let a2 = (ptr.add(0 + 32 * 2) as *const u8x32).read_unaligned();
         // let b2 = (ptr.add(1 + 32 * 2) as *const u8x32).read_unaligned();
@@ -44,10 +46,23 @@ unsafe fn count(s: &[u8]) -> u64 {
         // let c3 = (ptr.add(2 + 32 * 3) as *const u8x32).read_unaligned();
         // let d3 = (ptr.add(3 + 32 * 3) as *const u8x32).read_unaligned();
 
-        const HASH: u8 = ((b'm' as u32 * 2) + b'u' as u32 + b'l' as u32 + b'(' as u32) as u8;
-        let tmp: u8x32 = _mm256_slli_epi64(a0.into(), 1).into();
-        let hash0 = tmp + b0 + c0 + d0;
-        let mask0 = hash0.simd_eq(Simd::splat(HASH)).to_bitmask();
+        let b0 = a0.rotate_elements_left::<1>();
+        let c0 = a0.rotate_elements_left::<2>();
+        let d0 = a0.rotate_elements_left::<3>();
+        // println!("{:?} {:?} {:?}", b0, c0, d0);
+        let tmp0: u8x32 = _mm256_slli_epi64(a0.into(), 1).into();
+        let tmp1: u8x32 = _mm256_slli_epi64(a1.into(), 1).into();
+
+        let lo0 = tmp0 + b0;
+        let lo1 = tmp1 + b1;
+        let hi0 = c0 + d0;
+        let hi1 = c1 + d1;
+
+        let hash0 = lo0 + hi0;
+        let hash1 = lo1 + hi1;
+
+        let mask0 = hash0.simd_eq(target).to_bitmask();
+        // let mask1 = hash1.simd_eq(target).to_bitmask();
         // a0.simd_eq(m) & b0.simd_eq(u).to_bitmask() & c0.simd_eq(l).to_bitmask() & d0.simd_eq(p).to_bitmask();
         // let mask1 = a1.simd_eq(m).to_bitmask()
         //     & b1.simd_eq(u).to_bitmask()
@@ -66,11 +81,10 @@ unsafe fn count(s: &[u8]) -> u64 {
         //     | ((mask2 as u128) << 64)
         //     | ((mask3 as u128) << 96);
         // let mut mask = mask0 | (mask1 << 32);
-        let mut mask = mask0 as u32;
+        let mut mask = mask0 as u32 & ((1 << 29) - 1);
         loop {
-            let idx = mask.trailing_zeros();
             if mask == 0 {
-                ptr = ptr.add(32);
+                ptr = ptr.add(29);
 
                 if ptr < end {
                     continue 'solve;
@@ -79,6 +93,7 @@ unsafe fn count(s: &[u8]) -> u64 {
                 return sum[0] as u64;
             }
 
+            let idx = mask.trailing_zeros();
             mask &= mask - 1;
 
             let offset = idx as usize;
