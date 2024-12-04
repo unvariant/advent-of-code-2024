@@ -5,3 +5,4 @@ use std::fmt::Display;
 use std::simd::prelude::*;
 
 pub mod day3;
+pub mod day4;

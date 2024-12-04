@@ -239,7 +239,6 @@ unsafe fn countu(s: &[u8]) -> u64 {
         let mask1 = lo1 & hi1;
 
         let mask0 = a0.simd_eq(m).to_bitmask();
-        let mask1 = a1.simd_eq(m).to_bitmask();
 
         // let mask2 = a2.simd_eq(m).to_bitmask()
         //     & b2.simd_eq(u).to_bitmask()
@@ -253,12 +252,12 @@ unsafe fn countu(s: &[u8]) -> u64 {
         //     | ((mask1 as u128) << 32)
         //     | ((mask2 as u128) << 64)
         //     | ((mask3 as u128) << 96);
-        let mut mask = mask0 | (mask1 << 32);
+        let mut mask = mask0;
         // let mut mask = mask0 as u32 & ((1 << 29) - 1);
         //
         loop {
             if mask == 0 {
-                ptr = ptr.add(64);
+                ptr = ptr.add(32);
 
                 if ptr < end {
                     continue 'solve;
@@ -308,7 +307,6 @@ unsafe fn countu(s: &[u8]) -> u64 {
 unsafe fn switch(s: &[u8]) -> u64 {
     let mut ptr = s.as_ptr();
     let end = s.as_ptr().add(s.len());
-    let mut enabled = true;
     let mut start = ptr;
     let d: u8x32 = Simd::splat(b'd');
     let mut sum = 0;
@@ -337,7 +335,11 @@ unsafe fn switch(s: &[u8]) -> u64 {
                 let stop =
                     ptr as *const _ as usize + idx as usize - s.as_ptr() as *const _ as usize;
                 let begin = start as *const _ as usize - s.as_ptr() as *const _ as usize;
+                let prev = (ptr.add(idx as usize + 7) as *const u8x32).read_unaligned();
+                (ptr.add(idx as usize + 7) as *const _ as *mut u8x32)
+                    .write_unaligned(u8x32::splat(0xff));
                 sum += countu(&s[begin..stop]);
+                (ptr.add(idx as usize + 7) as *const _ as *mut u8x32).write_unaligned(prev);
                 ptr = ptr.add(idx as usize + 7);
                 break;
             }
