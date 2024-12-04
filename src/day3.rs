@@ -4,9 +4,7 @@ static DIGIT_LUT: [u8x16; 1 << 7] =
     unsafe { std::mem::transmute(*include_bytes!("day3-digit.bin")) };
 
 #[cfg(target_feature = "avx512f")]
-unsafe fn count(s: &[u8]) -> u64 {
-    0
-}
+compile_error!("WTF");
 
 #[target_feature(enable = "avx2,avx512f,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn count(s: &[u8]) -> u64 {
