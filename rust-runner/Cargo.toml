@@ -1,0 +1,19 @@
+[package]
+name = "rust-runner"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+paste = "1.0.0"
+codspeed-criterion-compat = { version = "2.7.2", default-features = false }
+# solution = { git = "YOUR_SOLUTION_REPO_GOES_HERE" }
+
+[[bench]]
+name = "bench_part1"
+harness = false
+path = "bench_part1.rs"
+
+[[bench]]
+name = "bench_part2"
+harness = false
+path = "bench_part2.rs"
