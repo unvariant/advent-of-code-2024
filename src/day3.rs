@@ -2,9 +2,13 @@ use super::*;
 
 static DIGIT_LUT: [u8x16; 1 << 7] =
     unsafe { std::mem::transmute(*include_bytes!("day3-digit.bin")) };
-static SEP_LUT: [u8x16; 1 << 8] = unsafe { std::mem::transmute(*include_bytes!("day3-sep.bin")) };
 
-#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+#[cfg(target_feature = "avx512f")]
+unsafe fn count(s: &[u8]) -> u64 {
+    0
+}
+
+#[target_feature(enable = "avx2,avx512f,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn count(s: &[u8]) -> u64 {
     let mut ptr = s.as_ptr();
     let end = ptr.add(s.len());
