@@ -9,7 +9,7 @@ from tqdm import tqdm
 ps = list(permutations("XXXXMMMMAAAASSSS\n\n\n\n", r=4))
 print(f"{len(ps) = }")
 
-for ms in list(permutations([1, 2, 3, 4, 5, 6, 7, 8], r=4)):
+for ms in list(permutations([0, 1, 2, 3, 4, 5, 6, 7, 8], r=4)):
     for m in permutations(ms):
         xmas = encode(b"XMAS", m)
         samx = encode(b"SAMX", m)

@@ -135,7 +135,27 @@ unsafe fn scan(s: &[u8]) -> u32 {
         sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
         sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
 
-        ptr = ptr.add(32);
+        // horizontal
+        let hash = hash!(r001, r101, r201, r301);
+        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
+
+        // vertial
+        let hash = hash!(r001, r011, r021, r031);
+        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
+
+        // top left diagonal
+        let hash = hash!(r001, r111, r221, r331);
+        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
+
+        // top right diagonal
+        let hash = hash!(r301, r211, r121, r031);
+        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
+
+        ptr = ptr.add(64);
         if ptr >= end {
             break;
         }
@@ -156,8 +176,10 @@ unsafe fn scan(s: &[u8]) -> u32 {
 
     // convert to u16 to prevent overflow
     let words: u16x16 = _mm256_maddubs_epi16(sums.into(), u8x32::splat(1).into()).into();
-    let r = words.reduce_sum() as u32;
-    return r;
+    let dwords: u32x8 = _mm256_madd_epi16(words.into(), u16x16::splat(1).into()).into();
+    let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
+    let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
+    return dwords[0] + dwords[4];
 }
 
 pub fn part1(s: &str) -> impl std::fmt::Display {
