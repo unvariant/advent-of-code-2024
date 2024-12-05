@@ -200,7 +200,7 @@ pub fn part1(s: &str) -> impl std::fmt::Display {
 unsafe fn cross(s: &[u8]) -> u32 {
     let mut ptr = s.as_ptr();
     // stop 2 rows before since we read at current row to current row + 2
-    let end = s.as_ptr().add(128 * 151 + 1);
+    let end = s.as_ptr().add(256 * 75 + 1);
 
     macro_rules! index {
         ($inc:expr, $row:expr, $off:expr) => {
@@ -284,7 +284,59 @@ unsafe fn cross(s: &[u8]) -> u32 {
         let pos3 = hash3.simd_eq(u8x32::splat(b'M' + b'S'));
         sums -= (pos2 & pos3 & r111.simd_eq(u8x32::splat(b'A'))).to_int();
 
-        ptr = ptr.add(128);
+        let r000 = index!(0, 0, 4); // top left
+        let r110 = index!(1, 1, 4); // middle
+        let r020 = index!(0, 2, 4); // bottom left
+        let r200 = index!(2, 0, 4); // top right
+        let r220 = index!(2, 2, 4); // bottom right
+
+        let r001 = index!(0, 0, 5); // top left
+        let r111 = index!(1, 1, 5); // middle
+        let r021 = index!(0, 2, 5); // bottom left
+        let r201 = index!(2, 0, 5); // top right
+        let r221 = index!(2, 2, 5); // bottom right
+
+        let hash0 = hash!(r000, r110, r220);
+        let hash1 = hash!(r200, r110, r020);
+
+        let hash2 = hash!(r001, r111, r221);
+        let hash3 = hash!(r201, r111, r021);
+
+        let pos0 = hash0.simd_eq(u8x32::splat(b'M' + b'S'));
+        let pos1 = hash1.simd_eq(u8x32::splat(b'M' + b'S'));
+        sums -= (pos0 & pos1 & r110.simd_eq(u8x32::splat(b'A'))).to_int();
+
+        let pos2 = hash2.simd_eq(u8x32::splat(b'M' + b'S'));
+        let pos3 = hash3.simd_eq(u8x32::splat(b'M' + b'S'));
+        sums -= (pos2 & pos3 & r111.simd_eq(u8x32::splat(b'A'))).to_int();
+
+        let r000 = index!(0, 0, 6); // top left
+        let r110 = index!(1, 1, 6); // middle
+        let r020 = index!(0, 2, 6); // bottom left
+        let r200 = index!(2, 0, 6); // top right
+        let r220 = index!(2, 2, 6); // bottom right
+
+        let r001 = index!(0, 0, 7); // top left
+        let r111 = index!(1, 1, 7); // middle
+        let r021 = index!(0, 2, 7); // bottom left
+        let r201 = index!(2, 0, 7); // top right
+        let r221 = index!(2, 2, 7); // bottom right
+
+        let hash0 = hash!(r000, r110, r220);
+        let hash1 = hash!(r200, r110, r020);
+
+        let hash2 = hash!(r001, r111, r221);
+        let hash3 = hash!(r201, r111, r021);
+
+        let pos0 = hash0.simd_eq(u8x32::splat(b'M' + b'S'));
+        let pos1 = hash1.simd_eq(u8x32::splat(b'M' + b'S'));
+        sums -= (pos0 & pos1 & r110.simd_eq(u8x32::splat(b'A'))).to_int();
+
+        let pos2 = hash2.simd_eq(u8x32::splat(b'M' + b'S'));
+        let pos3 = hash3.simd_eq(u8x32::splat(b'M' + b'S'));
+        sums -= (pos2 & pos3 & r111.simd_eq(u8x32::splat(b'A'))).to_int();
+
+        ptr = ptr.add(256);
         if ptr >= end {
             break;
         }
