@@ -200,23 +200,6 @@ unsafe fn cross(s: &[u8]) -> u32 {
     let mut ptr = s.as_ptr();
     let end = s.as_ptr().add(141 * 140).sub(141 * 1);
 
-    asm!(
-        "mov rdi, {dst}",
-        "mov rsi, {src}",
-        "mov ecx, 512",
-        "rep movsb",
-        "mov rdi, {src}",
-        "mov eax, 'X'",
-        "mov ecx, 512",
-        "rep stosb",
-        dst = in(reg) SAVE.as_ptr(),
-        src = in(reg) s.as_ptr().add(141 * 140),
-        out("rax") _,
-        out("rcx") _,
-        out("rdi") _,
-        out("rsi") _,
-    );
-
     macro_rules! index {
         ($inc:expr, $row:expr, $off:expr) => {
             (ptr.add($inc).add($row * 141).add($off * 32) as *const u8x32).read_unaligned()
@@ -303,18 +286,6 @@ unsafe fn cross(s: &[u8]) -> u32 {
             break;
         }
     }
-
-    asm!(
-        "mov rdi, {dst}",
-        "mov rsi, {src}",
-        "mov rcx, 512",
-        "rep movsb",
-        dst = in(reg) s.as_ptr().add(141 * 140),
-        src = in(reg) SAVE.as_ptr(),
-        out("rdi") _,
-        out("rsi") _,
-        out("rcx") _,
-    );
 
     let words0: u16x16 = _mm256_maddubs_epi16(sums0.into(), i8x32::splat(1).into()).into();
     let words1: u16x16 = _mm256_maddubs_epi16(sums1.into(), i8x32::splat(1).into()).into();
