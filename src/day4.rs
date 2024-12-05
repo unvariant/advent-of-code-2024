@@ -1,22 +1,86 @@
+use std::hint::black_box;
+
 use super::*;
+
+static mut SAVE: [u8; 512] = [0; 512];
 
 #[export_name = "part1"]
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn scan(s: &[u8]) -> u32 {
-    let mut total = 0;
     let mut ptr = s.as_ptr();
-    let end = s.as_ptr().add(s.len());
+    let end = s.as_ptr().add(141 * 140);
 
-    let x = u8x32::splat(b'X');
-    let m = u8x32::splat(b'M');
-    let a = u8x32::splat(b'A');
-    let s = u8x32::splat(b'S');
+    asm!(
+        "mov rdi, {dst}",
+        "mov rsi, {src}",
+        "mov ecx, 512",
+        "rep movsb",
+        "mov rdi, {src}",
+        "mov eax, 'M'",
+        "mov ecx, 512",
+        "rep stosb",
+        dst = in(reg) SAVE.as_ptr(),
+        src = in(reg) s.as_ptr().add(141 * 140),
+        out("rax") _,
+        out("rcx") _,
+        out("rdi") _,
+        out("rsi") _,
+    );
+
+    // black_box(s.as_ptr().add(141 * 140)).copy_to(SAVE.as_mut_ptr(), 512);
+    // black_box(s.as_ptr().add(141 * 140) as *mut u8).write_bytes(b'M', 512);
+
+    // let x = u8x32::splat(b'X');
+    // let m = u8x32::splat(b'M');
+    // let a = u8x32::splat(b'A');
+    // let s = u8x32::splat(b'S');
+
+    let mut sums: i8x32 = Simd::splat(0);
 
     macro_rules! index {
         ($inc:expr, $row:expr, $off:expr) => {
             (ptr.add($inc).add($row * 141).add($off * 32) as *const u8x32).read_unaligned()
         };
     }
+
+    macro_rules! one {
+        ($n:expr) => {
+            $n
+        };
+    }
+
+    macro_rules! two {
+        ($n:expr) => {
+            $n << 1
+        };
+    }
+
+    macro_rules! three {
+        ($n:expr) => {
+            ($n << 1) + $n
+        };
+    }
+
+    macro_rules! four {
+        ($n:expr) => {
+            $n << 2
+        };
+    }
+
+    macro_rules! five {
+        ($n:expr) => {
+            ($n << 2) + $n
+        };
+    }
+
+    macro_rules! hash {
+        ($a:expr, $b:expr, $c:expr, $d:expr) => {
+            one!($a) + two!($b) + four!($c) + three!($d)
+        };
+    }
+
+    const FORWARD: u8 = 0xef;
+    const BCKWARD: u8 = 0x11;
 
     loop {
         let r000 = index!(0, 0, 0);
@@ -51,65 +115,55 @@ unsafe fn scan(s: &[u8]) -> u32 {
         let r221 = index!(2, 2, 1);
         let r331 = index!(3, 3, 1);
 
-        let horizontal_forward =
-            (r000.simd_eq(x) & r010.simd_eq(m) & r020.simd_eq(a) & r030.simd_eq(s)).to_bitmask()
-                | ((r001.simd_eq(x) & r011.simd_eq(m) & r021.simd_eq(a) & r031.simd_eq(s))
-                    .to_bitmask()
-                    << 32);
-        let horizontal_bckward =
-            (r000.simd_eq(s) & r010.simd_eq(a) & r020.simd_eq(m) & r030.simd_eq(x)).to_bitmask()
-                | ((r001.simd_eq(s) & r011.simd_eq(a) & r021.simd_eq(m) & r031.simd_eq(x))
-                    .to_bitmask()
-                    << 32);
-        let vertical_forward =
-            (r000.simd_eq(x) & r100.simd_eq(m) & r200.simd_eq(a) & r300.simd_eq(s)).to_bitmask()
-                | ((r001.simd_eq(x) & r101.simd_eq(m) & r201.simd_eq(a) & r301.simd_eq(s))
-                    .to_bitmask()
-                    << 32);
-        let vertical_bckward =
-            (r000.simd_eq(s) & r100.simd_eq(a) & r200.simd_eq(m) & r300.simd_eq(x)).to_bitmask()
-                | ((r001.simd_eq(s) & r101.simd_eq(a) & r201.simd_eq(m) & r301.simd_eq(x))
-                    .to_bitmask()
-                    << 32);
-        let top_right_forward =
-            (r030.simd_eq(x) & r120.simd_eq(m) & r210.simd_eq(a) & r300.simd_eq(s)).to_bitmask()
-                | ((r031.simd_eq(x) & r121.simd_eq(m) & r211.simd_eq(a) & r301.simd_eq(s))
-                    .to_bitmask()
-                    << 32);
-        let top_right_bckward =
-            (r030.simd_eq(s) & r120.simd_eq(a) & r210.simd_eq(m) & r300.simd_eq(x)).to_bitmask()
-                | ((r031.simd_eq(s) & r121.simd_eq(a) & r211.simd_eq(m) & r301.simd_eq(x))
-                    .to_bitmask()
-                    << 32);
-        let top_left_forward =
-            (r000.simd_eq(x) & r110.simd_eq(m) & r220.simd_eq(a) & r330.simd_eq(s)).to_bitmask()
-                | ((r001.simd_eq(x) & r111.simd_eq(m) & r221.simd_eq(a) & r331.simd_eq(s))
-                    .to_bitmask()
-                    << 32);
-        let top_left_bckward =
-            (r000.simd_eq(s) & r110.simd_eq(a) & r220.simd_eq(m) & r330.simd_eq(x)).to_bitmask()
-                | ((r001.simd_eq(s) & r111.simd_eq(a) & r221.simd_eq(m) & r331.simd_eq(x))
-                    .to_bitmask()
-                    << 32);
+        // horizontal
+        let hash = hash!(r000, r100, r200, r300);
+        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
 
-        total += horizontal_forward.count_ones()
-            + horizontal_bckward.count_ones()
-            + vertical_forward.count_ones()
-            + vertical_bckward.count_ones()
-            + top_left_forward.count_ones()
-            + top_left_bckward.count_ones()
-            + top_right_forward.count_ones()
-            + top_right_bckward.count_ones();
+        // vertial
+        let hash = hash!(r000, r010, r020, r030);
+        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
 
-        ptr = ptr.add(64);
+        // top left diagonal
+        let hash = hash!(r000, r110, r220, r330);
+        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
+
+        // top right diagonal
+        let hash = hash!(r300, r210, r120, r030);
+        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
+
+        ptr = ptr.add(32);
         if ptr >= end {
-            return total;
+            break;
         }
     }
+
+    asm!(
+        "mov rdi, {dst}",
+        "mov rsi, {src}",
+        "mov rcx, 512",
+        "rep movsb",
+        dst = in(reg) s.as_ptr().add(141 * 140),
+        src = in(reg) SAVE.as_ptr(),
+        out("rdi") _,
+        out("rsi") _,
+        out("rcx") _,
+    );
+    // black_box(s.as_ptr().add(141 * 140) as *mut u8).copy_from(SAVE.as_ptr(), 512);
+
+    // convert to u16 to prevent overflow
+    let words: u16x16 = _mm256_maddubs_epi16(sums.into(), u8x32::splat(1).into()).into();
+    let r = words.reduce_sum() as u32;
+    return r;
 }
 
 pub fn part1(s: &str) -> impl std::fmt::Display {
-    unsafe { scan(s.as_bytes()) }
+    // let mut s = String::from(s);
+    // s.extend(['M'; 141 * 5]);
+    unsafe { scan(&s.as_bytes()[0..140 * 141]) }
 }
 
 pub fn part2(s: &str) -> impl std::fmt::Display {

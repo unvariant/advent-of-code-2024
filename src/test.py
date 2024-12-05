@@ -5,7 +5,7 @@ import bisect
 import re
 
 day = 4
-dat = open(f'../benches/input-4.txt').read().splitlines()
+dat = open(f'../benches/input-4-2.txt').read().splitlines()
 # dat = list(map(lambda line: line[:128], dat))
 
 # part 1
