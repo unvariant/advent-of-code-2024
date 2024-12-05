@@ -5,8 +5,8 @@ use advent_of_code_2024::day4;
 
 pub fn day3(criterion: &mut Criterion) {
     let input = include_str!("./input-3.txt");
-    criterion.bench_function("part1", |b| b.iter(|| day3::part1(black_box(input))));
-    criterion.bench_function("part2", |b| b.iter(|| day3::part2(black_box(input))));
+    criterion.bench_function("day3/part1", |b| b.iter(|| day3::part1(black_box(input))));
+    criterion.bench_function("day3/part2", |b| b.iter(|| day3::part2(black_box(input))));
     let output = day3::part1(input);
     assert_eq!(output.to_string(), "169021493");
     let output = day3::part2(input);
@@ -15,7 +15,7 @@ pub fn day3(criterion: &mut Criterion) {
 
 pub fn day4(criterion: &mut Criterion) {
     let input = include_str!("./input-4.txt");
-    criterion.bench_function("part1", |b| b.iter(|| day4::part1(black_box(input))));
+    criterion.bench_function("day4/part1", |b| b.iter(|| day4::part1(black_box(input))));
     // criterion.bench_function("part2", |b| b.iter(|| day4::part2(black_box(input))));
     let output = day4::part1(input);
     assert_eq!(output.to_string(), "2397");
