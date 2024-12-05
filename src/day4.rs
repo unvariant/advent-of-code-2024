@@ -7,6 +7,7 @@ static mut SAVE: [u8; 512] = [0; 512];
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn scan(s: &[u8]) -> u32 {
     let mut ptr = s.as_ptr();
+    // cant end early, since horizontal XMAS must be all counted
     let end = s.as_ptr().add(141 * 140);
 
     // not suspicious at all
