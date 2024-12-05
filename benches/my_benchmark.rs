@@ -18,7 +18,7 @@ pub fn day4(criterion: &mut Criterion) {
     let input = read_to_string("./benches/input-4.txt").unwrap();
     let s = input.as_str();
     criterion.bench_function("day4/part1", |b| b.iter(|| day4::part1(black_box(s))));
-    criterion.bench_function("part2", |b| b.iter(|| day4::part2(black_box(s))));
+    criterion.bench_function("day4/part2", |b| b.iter(|| day4::part2(black_box(s))));
     let output = day4::part1(s);
     assert_eq!(output.to_string(), "2397");
     let output = day4::part2(s);
