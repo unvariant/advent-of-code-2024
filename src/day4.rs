@@ -198,7 +198,8 @@ pub fn part1(s: &str) -> impl std::fmt::Display {
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn cross(s: &[u8]) -> u32 {
     let mut ptr = s.as_ptr();
-    let end = s.as_ptr().add(141 * 140).sub(141 * 1);
+    // stop 2 rows before since we read at current row to current row + 2
+    let end = s.as_ptr().add(141 * 140).sub(141 * 2);
 
     macro_rules! index {
         ($inc:expr, $row:expr, $off:expr) => {
