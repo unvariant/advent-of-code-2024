@@ -245,16 +245,32 @@ unsafe fn cross(s: &[u8]) -> u32 {
         let r200 = index!(2, 0, 0); // top right
         let r220 = index!(2, 2, 0); // bottom right
 
+        let r001 = index!(0, 0, 1); // top left
+        let r111 = index!(1, 1, 1); // middle
+        let r021 = index!(0, 2, 1); // bottom left
+        let r201 = index!(2, 0, 1); // top right
+        let r221 = index!(2, 2, 1); // bottom right
+
         let hash0 = hash!(r000, r110, r220);
         let hash1 = hash!(r200, r110, r020);
+
+        let hash2 = hash!(r001, r111, r221);
+        let hash3 = hash!(r201, r111, r021);
 
         let pos0 = hash0.simd_eq(u8x32::splat(FORWARD)).to_int()
             | hash0.simd_eq(u8x32::splat(BCKWARD)).to_int();
         let pos1 = hash1.simd_eq(u8x32::splat(FORWARD)).to_int()
             | hash1.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        sums -= pos0 & pos1;
 
-        ptr = ptr.add(32);
+        let pos2 = hash2.simd_eq(u8x32::splat(FORWARD)).to_int()
+            | hash2.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        let pos3 = hash3.simd_eq(u8x32::splat(FORWARD)).to_int()
+            | hash3.simd_eq(u8x32::splat(BCKWARD)).to_int();
+
+        sums -= pos0 & pos1;
+        sums -= pos2 & pos3;
+
+        ptr = ptr.add(64);
         if ptr >= end {
             break;
         }
