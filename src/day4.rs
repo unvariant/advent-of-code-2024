@@ -71,23 +71,35 @@ unsafe fn scan(s: &[u8]) -> u32 {
     macro_rules! hash {
         ($a:expr, $b:expr, $c:expr, $d:expr) => {{
             // 1 2 4 3
+            // XMAS 0xef
+            // SAMX 0x11
             // $a + 2 * $b + 4 * $c + 3 * $d
             // $a + 2 * ($b + 2 * $c + $d) + $d
-            let tmp = _mm256_add_epi8($b.into(), _mm256_add_epi8($c.into(), $c.into()));
-            let tmp = _mm256_add_epi8(tmp, $d.into());
-            let tmp = _mm256_add_epi8($a.into(), _mm256_add_epi8(tmp, tmp));
-            let tmp: u8x32 = _mm256_add_epi8(tmp, $d.into()).into();
+            // let tmp = _mm256_add_epi8($b.into(), _mm256_add_epi8($c.into(), $c.into()));
+            // let tmp = _mm256_add_epi8(tmp, $d.into());
+            // let tmp = _mm256_add_epi8($a.into(), _mm256_add_epi8(tmp, tmp));
+            // let tmp: u8x32 = _mm256_add_epi8(tmp, $d.into()).into();
+            // tmp
+
+            // 1 2 -2 -1
+            // XMAS 0x1d
+            // SAMX 0xe3
+            let tmp = _mm256_add_epi8($a.into(), _mm256_add_epi8($b.into(), $b.into()));
+            let tmp = _mm256_sub_epi8(tmp, _mm256_add_epi8($c.into(), $c.into()));
+            let tmp = _mm256_sub_epi8(tmp, $d.into());
+            let tmp: u8x32 = tmp.into();
             tmp
         }};
     }
 
-    const FORWARD: u8 = 0xef;
-    const BCKWARD: u8 = 0x11;
+    const FORWARD: u8 = 0x1d;
+    const BCKWARD: u8 = 0xe3;
 
-    let mut sums0: i8x32 = Simd::splat(0);
-    let mut sums1: i8x32 = Simd::splat(0);
-    let mut sums2: i8x32 = Simd::splat(0);
-    let mut sums3: i8x32 = Simd::splat(0);
+    let mut sums: i8x32 = i8x32::splat(0);
+    // let mut sums0: i8x32 = Simd::splat(0);
+    // let mut sums1: i8x32 = Simd::splat(0);
+    // let mut sums2: i8x32 = Simd::splat(0);
+    // let mut sums3: i8x32 = Simd::splat(0);
 
     loop {
         let r000 = index!(0, 0, 0);
@@ -140,22 +152,22 @@ unsafe fn scan(s: &[u8]) -> u32 {
         // top right diagonal
         let hash7 = hash!(r301, r211, r121, r031);
 
-        sums0 -= hash0.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums1 -= hash1.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums2 -= hash2.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums3 -= hash3.simd_eq(u8x32::splat(FORWARD)).to_int();
-        // sums -= hash4.simd_eq(u8x32::splat(FORWARD)).to_int();
-        // sums -= hash5.simd_eq(u8x32::splat(FORWARD)).to_int();
-        // sums -= hash6.simd_eq(u8x32::splat(FORWARD)).to_int();
-        // sums -= hash7.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums0 -= hash0.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        sums1 -= hash1.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        sums2 -= hash2.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        sums3 -= hash3.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        // sums -= hash4.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        // sums -= hash5.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        // sums -= hash6.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        // sums -= hash7.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        // sums0 -= hash0.simd_eq(u8x32::splat(FORWARD)).to_int();
+        // sums1 -= hash1.simd_eq(u8x32::splat(FORWARD)).to_int();
+        // sums2 -= hash2.simd_eq(u8x32::splat(FORWARD)).to_int();
+        // sums3 -= hash3.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash4.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash5.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash6.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash7.simd_eq(u8x32::splat(FORWARD)).to_int();
+        // sums0 -= hash0.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        // sums1 -= hash1.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        // sums2 -= hash2.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        // sums3 -= hash3.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash4.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash5.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash6.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash7.simd_eq(u8x32::splat(BCKWARD)).to_int();
 
         ptr = ptr.add(32);
         if ptr >= end {
@@ -177,21 +189,28 @@ unsafe fn scan(s: &[u8]) -> u32 {
     // black_box(s.as_ptr().add(141 * 140) as *mut u8).copy_from(SAVE.as_ptr(), 512);
 
     // convert to u16 to prevent overflow, while summing
-    let words0: u16x16 = _mm256_maddubs_epi16(sums0.into(), u8x32::splat(1).into()).into();
-    let words1: u16x16 = _mm256_maddubs_epi16(sums1.into(), u8x32::splat(1).into()).into();
-    let words2: u16x16 = _mm256_maddubs_epi16(sums2.into(), u8x32::splat(1).into()).into();
-    let words3: u16x16 = _mm256_maddubs_epi16(sums3.into(), u8x32::splat(1).into()).into();
+    // let words0: u16x16 = _mm256_maddubs_epi16(sums0.into(), u8x32::splat(1).into()).into();
+    // let words1: u16x16 = _mm256_maddubs_epi16(sums1.into(), u8x32::splat(1).into()).into();
+    // let words2: u16x16 = _mm256_maddubs_epi16(sums2.into(), u8x32::splat(1).into()).into();
+    // let words3: u16x16 = _mm256_maddubs_epi16(sums3.into(), u8x32::splat(1).into()).into();
 
-    let woords0: u16x16 = _mm256_hadd_epi16(words0.into(), words1.into()).into();
-    let woords1: u16x16 = _mm256_hadd_epi16(words2.into(), words3.into()).into();
+    // let woords0: u16x16 = _mm256_hadd_epi16(words0.into(), words1.into()).into();
+    // let woords1: u16x16 = _mm256_hadd_epi16(words2.into(), words3.into()).into();
 
-    let wooords0: u32x8 = _mm256_madd_epi16(woords0.into(), u16x16::splat(1).into()).into();
-    let wooords1: u32x8 = _mm256_madd_epi16(woords1.into(), u16x16::splat(1).into()).into();
-    // collect
-    let dwords: u32x8 = _mm256_hadd_epi32(wooords0.into(), wooords1.into()).into();
-    let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
-    let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
+    // let wooords0: u32x8 = _mm256_madd_epi16(woords0.into(), u16x16::splat(1).into()).into();
+    // let wooords1: u32x8 = _mm256_madd_epi16(woords1.into(), u16x16::splat(1).into()).into();
+    // // collect
+    // let dwords: u32x8 = _mm256_hadd_epi32(wooords0.into(), wooords1.into()).into();
+    // let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
+    // let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
     // println!("dwords = {:?}", dwords);
+
+    let words: u16x16 = _mm256_maddubs_epi16(sums.into(), u8x32::splat(1).into()).into();
+    // convert to u32 while summing
+    let dwords: u32x8 = _mm256_madd_epi16(words.into(), u16x16::splat(1).into()).into();
+    // collect
+    let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
+    let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
     return dwords[0] + dwords[4];
 }
 
