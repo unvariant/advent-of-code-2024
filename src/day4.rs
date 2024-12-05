@@ -74,9 +74,16 @@ unsafe fn scan(s: &[u8]) -> u32 {
     }
 
     macro_rules! hash {
-        ($a:expr, $b:expr, $c:expr, $d:expr) => {
-            one!($a) + two!($b) + four!($c) + three!($d)
-        };
+        ($a:expr, $b:expr, $c:expr, $d:expr) => {{
+            // 1 2 4 3
+            // $a + 2 * $b + 4 * $c + 3 * $d
+            // $a + 2 * ($b + 2 * $c + $d) + $d
+            let tmp = _mm256_add_epi8($b.into(), _mm256_add_epi8($c.into(), $c.into()));
+            let tmp = _mm256_add_epi8(tmp, $d.into());
+            let tmp = _mm256_add_epi8($a.into(), _mm256_add_epi8(tmp, tmp));
+            let tmp: u8x32 = _mm256_add_epi8(tmp, $d.into()).into();
+            tmp
+        }};
     }
 
     const FORWARD: u8 = 0xef;
@@ -116,44 +123,38 @@ unsafe fn scan(s: &[u8]) -> u32 {
         let r331 = index!(3, 3, 1);
 
         // horizontal
-        let hash = hash!(r000, r100, r200, r300);
-        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
-
+        let hash0 = hash!(r000, r100, r200, r300);
         // vertial
-        let hash = hash!(r000, r010, r020, r030);
-        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
-
+        let hash1 = hash!(r000, r010, r020, r030);
         // top left diagonal
-        let hash = hash!(r000, r110, r220, r330);
-        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
-
+        let hash2 = hash!(r000, r110, r220, r330);
         // top right diagonal
-        let hash = hash!(r300, r210, r120, r030);
-        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
-
+        let hash3 = hash!(r300, r210, r120, r030);
         // horizontal
-        let hash = hash!(r001, r101, r201, r301);
-        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
-
+        let hash4 = hash!(r001, r101, r201, r301);
         // vertial
-        let hash = hash!(r001, r011, r021, r031);
-        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
-
+        let hash5 = hash!(r001, r011, r021, r031);
         // top left diagonal
-        let hash = hash!(r001, r111, r221, r331);
-        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
-
+        let hash6 = hash!(r001, r111, r221, r331);
         // top right diagonal
-        let hash = hash!(r301, r211, r121, r031);
-        sums -= hash.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        let hash7 = hash!(r301, r211, r121, r031);
+
+        sums -= hash0.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash1.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash2.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash3.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash4.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash5.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash6.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash7.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash0.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash1.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash2.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash3.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash4.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash5.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash6.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash7.simd_eq(u8x32::splat(BCKWARD)).to_int();
 
         ptr = ptr.add(64);
         if ptr >= end {
