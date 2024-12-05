@@ -156,18 +156,18 @@ unsafe fn scan(s: &[u8]) -> u32 {
         // sums1 -= hash1.simd_eq(u8x32::splat(FORWARD)).to_int();
         // sums2 -= hash2.simd_eq(u8x32::splat(FORWARD)).to_int();
         // sums3 -= hash3.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash4.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash5.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash6.simd_eq(u8x32::splat(FORWARD)).to_int();
-        sums -= hash7.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash0.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash1.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash2.simd_eq(u8x32::splat(FORWARD)).to_int();
+        sums -= hash3.simd_eq(u8x32::splat(FORWARD)).to_int();
         // sums0 -= hash0.simd_eq(u8x32::splat(BCKWARD)).to_int();
         // sums1 -= hash1.simd_eq(u8x32::splat(BCKWARD)).to_int();
         // sums2 -= hash2.simd_eq(u8x32::splat(BCKWARD)).to_int();
         // sums3 -= hash3.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        sums -= hash4.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        sums -= hash5.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        sums -= hash6.simd_eq(u8x32::splat(BCKWARD)).to_int();
-        sums -= hash7.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash0.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash1.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash2.simd_eq(u8x32::splat(BCKWARD)).to_int();
+        sums -= hash3.simd_eq(u8x32::splat(BCKWARD)).to_int();
 
         ptr = ptr.add(32);
         if ptr >= end {
