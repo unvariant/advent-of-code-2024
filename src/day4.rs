@@ -174,18 +174,18 @@ unsafe fn scan(s: &[u8]) -> u32 {
     );
     // black_box(s.as_ptr().add(141 * 140) as *mut u8).copy_from(SAVE.as_ptr(), 512);
 
-    // convert to u16 to prevent overflow
+    // convert to u16 to prevent overflow, while summing
     let words: u16x16 = _mm256_maddubs_epi16(sums.into(), u8x32::splat(1).into()).into();
+    // convert to u32 while summing
     let dwords: u32x8 = _mm256_madd_epi16(words.into(), u16x16::splat(1).into()).into();
+    // collect
     let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
     let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
     return dwords[0] + dwords[4];
 }
 
 pub fn part1(s: &str) -> impl std::fmt::Display {
-    // let mut s = String::from(s);
-    // s.extend(['M'; 141 * 5]);
-    unsafe { scan(&s.as_bytes()[0..140 * 141]) }
+    unsafe { scan(&s.as_bytes()) }
 }
 
 pub fn part2(s: &str) -> impl std::fmt::Display {
