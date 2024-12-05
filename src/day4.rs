@@ -81,7 +81,7 @@ macro_rules! row16 {
 #[export_name = "part1"]
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn scan(s: &[u8]) -> u32 {
-    let mut total = 0;
+    let mut sums: [u32; 8] = [0; 8];
     let mut ptr = s.as_ptr();
 
     let x32 = u8x32::splat(b'X');
@@ -129,14 +129,14 @@ unsafe fn scan(s: &[u8]) -> u32 {
         let top_right_forward = row0x32.x & (row1x32.m << 1) & (row2x32.a << 2) & (row3x32.s << 3);
         let top_right_backward = row0x32.s & (row1x32.a << 1) & (row2x32.m << 2) & (row3x32.x << 3);
 
-        total += horizontal_forward.count_ones()
-            + horizontal_backward.count_ones()
-            + vertical_forward.count_ones()
-            + vertical_backward.count_ones()
-            + top_left_forward.count_ones()
-            + top_left_backward.count_ones()
-            + top_right_forward.count_ones()
-            + top_right_backward.count_ones();
+        sums[0] += horizontal_forward.count_ones();
+        sums[1] += horizontal_backward.count_ones();
+        sums[2] += vertical_forward.count_ones();
+        sums[3] += vertical_backward.count_ones();
+        sums[4] += top_left_forward.count_ones();
+        sums[5] += top_left_backward.count_ones();
+        sums[6] += top_right_forward.count_ones();
+        sums[7] += top_right_backward.count_ones();
 
         const MASK: u64 = 0xffffffffffffffffu64 & !0b111u64;
 
@@ -154,18 +154,18 @@ unsafe fn scan(s: &[u8]) -> u32 {
         let top_right_forward = row0x16.x & (row1x16.m << 1) & (row2x16.a << 2) & (row3x16.s << 3);
         let top_right_backward = row0x16.s & (row1x16.a << 1) & (row2x16.m << 2) & (row3x16.x << 3);
 
-        total += horizontal_forward.count_ones()
-            + horizontal_backward.count_ones()
-            + vertical_forward.count_ones()
-            + vertical_backward.count_ones()
-            + top_left_forward.count_ones()
-            + top_left_backward.count_ones()
-            + top_right_forward.count_ones()
-            + top_right_backward.count_ones();
+        sums[0] += horizontal_forward.count_ones();
+        sums[1] += horizontal_backward.count_ones();
+        sums[2] += vertical_forward.count_ones();
+        sums[3] += vertical_backward.count_ones();
+        sums[4] += top_left_forward.count_ones();
+        sums[5] += top_left_backward.count_ones();
+        sums[6] += top_right_forward.count_ones();
+        sums[7] += top_right_backward.count_ones();
         ptr = next;
     }
 
-    total
+    sums[0] + sums[1] + sums[2] + sums[3] + sums[4] + sums[5] + sums[6] + sums[7]
 }
 
 pub fn part1(s: &str) -> impl std::fmt::Display {
