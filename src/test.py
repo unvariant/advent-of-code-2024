@@ -5,7 +5,7 @@ import bisect
 import re
 
 day = 4
-dat = open(f'../benches/input-4-2.txt').read().splitlines()
+dat = open(f'../benches/input-4.txt').read().splitlines()
 # dat = list(map(lambda line: line[:128], dat))
 
 # part 1
@@ -26,5 +26,19 @@ for a in range(len(dat)):
                     s += dat[x][y]
             if s == target:
                 c += 1
+
+print(c)
+
+c = 0
+for a in range(1, len(dat) - 1):
+    for b in range(1, len(dat[0]) - 1):
+        block = [dat[a + x][b + y] for x in range(-1, 2) for y in range(-1, 2)]
+        if block[4] != 'A':
+            continue
+
+        down = ''.join(block[::4])
+        up = ''.join(block[2:7:2])
+        if down in ['MAS', 'SAM'] and up in ['MAS', 'SAM']:
+            c += 1
 
 print(c)
