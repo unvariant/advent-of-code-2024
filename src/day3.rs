@@ -5,6 +5,7 @@ struct Aligned([u8x16; 1 << 7]);
 
 static DIGIT_LUT: Aligned = unsafe { std::mem::transmute(*include_bytes!("day3-digit.bin")) };
 
+#[allow(dead_code)]
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn count(s: &[u8]) -> u64 {
     let raw = (s.as_ptr() as *const _ as usize) & !((1 << 6) - 1);
@@ -157,6 +158,7 @@ pub fn part1(s: &str) -> impl Display {
     unsafe { count(s.as_bytes()) }
 }
 
+#[allow(dead_code)]
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn countu(s: &[u8]) -> u64 {
     let mut ptr = s.as_ptr();
