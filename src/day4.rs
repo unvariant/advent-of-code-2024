@@ -225,10 +225,11 @@ unsafe fn cross(s: &[u8]) -> u32 {
 
     const FORWARD: u8 = 0x71;
     const BCKWARD: u8 = 0x6b;
-    let mut sums0: i8x32 = i8x32::splat(0);
-    let mut sums1: i8x32 = i8x32::splat(0);
-    let mut sums2: i8x32 = i8x32::splat(0);
-    let mut sums3: i8x32 = i8x32::splat(0);
+    // let mut sums0: i8x32 = i8x32::splat(0);
+    // let mut sums1: i8x32 = i8x32::splat(0);
+    // let mut sums2: i8x32 = i8x32::splat(0);
+    // let mut sums3: i8x32 = i8x32::splat(0);
+    let mut sums: i8x32 = i8x32::splat(0);
 
     loop {
         let r000 = index!(0, 0, 0); // top left
@@ -251,11 +252,11 @@ unsafe fn cross(s: &[u8]) -> u32 {
 
         let pos0 = hash0.simd_eq(u8x32::splat(b'M' + b'S'));
         let pos1 = hash1.simd_eq(u8x32::splat(b'M' + b'S'));
-        sums0 -= (pos0 & pos1 & r110.simd_eq(u8x32::splat(b'A'))).to_int();
+        sums -= (pos0 & pos1 & r110.simd_eq(u8x32::splat(b'A'))).to_int();
 
         let pos2 = hash2.simd_eq(u8x32::splat(b'M' + b'S'));
         let pos3 = hash3.simd_eq(u8x32::splat(b'M' + b'S'));
-        sums1 -= (pos2 & pos3 & r111.simd_eq(u8x32::splat(b'A'))).to_int();
+        sums -= (pos2 & pos3 & r111.simd_eq(u8x32::splat(b'A'))).to_int();
 
         let r000 = index!(0, 0, 2); // top left
         let r110 = index!(1, 1, 2); // middle
@@ -277,11 +278,11 @@ unsafe fn cross(s: &[u8]) -> u32 {
 
         let pos0 = hash0.simd_eq(u8x32::splat(b'M' + b'S'));
         let pos1 = hash1.simd_eq(u8x32::splat(b'M' + b'S'));
-        sums2 -= (pos0 & pos1 & r110.simd_eq(u8x32::splat(b'A'))).to_int();
+        sums -= (pos0 & pos1 & r110.simd_eq(u8x32::splat(b'A'))).to_int();
 
         let pos2 = hash2.simd_eq(u8x32::splat(b'M' + b'S'));
         let pos3 = hash3.simd_eq(u8x32::splat(b'M' + b'S'));
-        sums3 -= (pos2 & pos3 & r111.simd_eq(u8x32::splat(b'A'))).to_int();
+        sums -= (pos2 & pos3 & r111.simd_eq(u8x32::splat(b'A'))).to_int();
 
         ptr = ptr.add(128);
         if ptr >= end {
@@ -289,23 +290,23 @@ unsafe fn cross(s: &[u8]) -> u32 {
         }
     }
 
-    let words0: u16x16 = _mm256_maddubs_epi16(sums0.into(), i8x32::splat(1).into()).into();
-    let words1: u16x16 = _mm256_maddubs_epi16(sums1.into(), i8x32::splat(1).into()).into();
-    let words2: u16x16 = _mm256_maddubs_epi16(sums2.into(), i8x32::splat(1).into()).into();
-    let words3: u16x16 = _mm256_maddubs_epi16(sums3.into(), i8x32::splat(1).into()).into();
+    // let words0: u16x16 = _mm256_maddubs_epi16(sums0.into(), i8x32::splat(1).into()).into();
+    // let words1: u16x16 = _mm256_maddubs_epi16(sums1.into(), i8x32::splat(1).into()).into();
+    // let words2: u16x16 = _mm256_maddubs_epi16(sums2.into(), i8x32::splat(1).into()).into();
+    // let words3: u16x16 = _mm256_maddubs_epi16(sums3.into(), i8x32::splat(1).into()).into();
 
-    let woords0: u16x16 = _mm256_hadd_epi16(words0.into(), words1.into()).into();
-    let woords1: u16x16 = _mm256_hadd_epi16(words2.into(), words3.into()).into();
+    // let woords0: u16x16 = _mm256_hadd_epi16(words0.into(), words1.into()).into();
+    // let woords1: u16x16 = _mm256_hadd_epi16(words2.into(), words3.into()).into();
 
-    let words: u16x16 = _mm256_hadd_epi16(woords0.into(), woords1.into()).into();
+    // let words: u16x16 = _mm256_hadd_epi16(woords0.into(), woords1.into()).into();
 
-    return words.reduce_sum() as u32;
+    // return words.reduce_sum() as u32;
 
-    // let words: u16x16 = _mm256_maddubs_epi16(sums.into(), u8x32::splat(1).into()).into();
-    // let dwords: u32x8 = _mm256_madd_epi16(words.into(), u16x16::splat(1).into()).into();
-    // let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
-    // let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
-    // return dwords[0] + dwords[4];
+    let words: u16x16 = _mm256_maddubs_epi16(sums.into(), u8x32::splat(1).into()).into();
+    let dwords: u32x8 = _mm256_madd_epi16(words.into(), u16x16::splat(1).into()).into();
+    let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
+    let dwords: u32x8 = _mm256_hadd_epi32(dwords.into(), dwords.into()).into();
+    return dwords[0] + dwords[4];
 }
 
 pub fn part2(s: &str) -> impl std::fmt::Display {
