@@ -104,6 +104,11 @@ unsafe fn scan(s: &[u8]) -> u32 {
     let mut row2x16 = row16!(ptr.add(141 * 1 + 125), x16, m16, a16, s16);
     let mut row3x16 = row16!(ptr.add(141 * 2 + 125), x16, m16, a16, s16);
 
+    const COUNT: usize = 140 * (16 + 8);
+    let mut bits: [std::mem::MaybeUninit<u64>; COUNT] =
+        std::mem::MaybeUninit::uninit().assume_init();
+    let mut base = bits.as_mut_ptr();
+
     for _ in 0..140 {
         let next = ptr.add(141);
         row0x32 = row1x32;
@@ -129,14 +134,14 @@ unsafe fn scan(s: &[u8]) -> u32 {
         let top_right_forward = row0x32.x & (row1x32.m << 1) & (row2x32.a << 2) & (row3x32.s << 3);
         let top_right_backward = row0x32.s & (row1x32.a << 1) & (row2x32.m << 2) & (row3x32.x << 3);
 
-        total += horizontal_forward.count_ones()
-            + horizontal_backward.count_ones()
-            + vertical_forward.count_ones()
-            + vertical_backward.count_ones()
-            + top_left_forward.count_ones()
-            + top_left_backward.count_ones()
-            + top_right_forward.count_ones()
-            + top_right_backward.count_ones();
+        (base as *mut u128).add(0).write(horizontal_forward);
+        (base as *mut u128).add(1).write(horizontal_backward);
+        (base as *mut u128).add(2).write(vertical_forward);
+        (base as *mut u128).add(3).write(vertical_backward);
+        (base as *mut u128).add(4).write(top_left_forward);
+        (base as *mut u128).add(5).write(top_left_backward);
+        (base as *mut u128).add(6).write(top_right_forward);
+        (base as *mut u128).add(7).write(top_right_backward);
 
         const MASK: u64 = 0xffffffffffffffffu64 & !0b111u64;
 
@@ -154,15 +159,23 @@ unsafe fn scan(s: &[u8]) -> u32 {
         let top_right_forward = row0x16.x & (row1x16.m << 1) & (row2x16.a << 2) & (row3x16.s << 3);
         let top_right_backward = row0x16.s & (row1x16.a << 1) & (row2x16.m << 2) & (row3x16.x << 3);
 
-        total += horizontal_forward.count_ones()
-            + horizontal_backward.count_ones()
-            + vertical_forward.count_ones()
-            + vertical_backward.count_ones()
-            + top_left_forward.count_ones()
-            + top_left_backward.count_ones()
-            + top_right_forward.count_ones()
-            + top_right_backward.count_ones();
+        (base as *mut u64).add(16 + 0).write(horizontal_forward);
+        (base as *mut u64).add(16 + 1).write(horizontal_backward);
+        (base as *mut u64).add(16 + 2).write(vertical_forward);
+        (base as *mut u64).add(16 + 3).write(vertical_backward);
+        (base as *mut u64).add(16 + 4).write(top_left_forward);
+        (base as *mut u64).add(16 + 5).write(top_left_backward);
+        (base as *mut u64).add(16 + 6).write(top_right_forward);
+        (base as *mut u64).add(16 + 7).write(top_right_backward);
+
+        base = base.add(16 + 8);
         ptr = next;
+    }
+
+    for i in 0..140 {
+        for j in 0..24 {
+            total += bits[i * 24 + j].assume_init().count_ones();
+        }
     }
 
     total
