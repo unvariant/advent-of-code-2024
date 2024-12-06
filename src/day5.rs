@@ -361,9 +361,6 @@ unsafe fn magic_the_gathering(s: &[u8]) -> u32 {
                 // println!("{is_ordered}");
                 // }
                 valid = valid && is_ordered;
-                if !valid {
-                    break;
-                }
             }
 
             // println!("{idx} is valid: {valid}");
