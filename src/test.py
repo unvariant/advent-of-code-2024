@@ -59,11 +59,12 @@ i = 0
 for update in updates:
     if isOrdered(update):
         middle_sum += update[len(update) // 2]
-        print(i, update)
+        print("o", i, update)
     else:
         new_update = reordered(update)
         assert isOrdered(new_update)
         middle_sum_corrected += new_update[len(new_update) // 2]
+        print("u", i, new_update)
     i += 1
 
 
