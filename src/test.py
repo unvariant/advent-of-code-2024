@@ -1,44 +1,72 @@
-import math
-import itertools
-from collections import Counter, defaultdict, deque
-import bisect
-import re
+data = open("../benches/input-5.txt").read()
 
-day = 4
-dat = open(f'../benches/input-4-2.txt').read().splitlines()
-# dat = list(map(lambda line: line[:128], dat))
+rules, pages = data.split("\n\n")
+rules = list(map(lambda line: list(map(int, line.split("|"))), rules.splitlines()))
 
-# part 1
-c = 0
-dxy = [(x, y) for x in range(-1, 2) for y in range(-1, 2) if x or y]
-target = 'XMAS'
-for a in range(len(dat)):
-    for b in range(len(dat[0])):
-        if dat[a][b] != target[0]:
-            continue
+d = {}
+for target, req in rules:
+    d.setdefault(target, []).append(req)
 
-        for dx, dy in dxy:
-            s = 'X'
-            x, y = a, b
-            for _ in range(1, len(target)):
-                x, y = x + dx, y + dy
-                if 0 <= x < len(dat) and 0 <= y < len(dat[0]):
-                    s += dat[x][y]
-            if s == target:
-                c += 1
+for target in sorted(d.keys()):
+    print(f"{target} has {len(d[target])} reqs {d[target]}")
 
-print(c)
+from collections import defaultdict
 
-c = 0
-for a in range(1, len(dat) - 1):
-    for b in range(1, len(dat[0]) - 1):
-        block = [dat[a + x][b + y] for x in range(-1, 2) for y in range(-1, 2)]
-        if block[4] != 'A':
-            continue
+data = open("../benches/input-5.txt").read().splitlines()
 
-        down = ''.join(block[::4])
-        up = ''.join(block[2:7:2])
-        if down in ['MAS', 'SAM'] and up in ['MAS', 'SAM']:
-            c += 1
+def isOrdered(update):
+    for idx, item in enumerate(update):
+        if len(order_dict[item]) != 0:
+            for next in order_dict[item]:
+                try:
+                    if update.index(next) > idx:
+                        return False
+                except ValueError:
+                    pass
+    return True
 
-print(c)
+
+def reordered(update):
+    if isOrdered(update):
+        return update
+    new_update = []
+    for idx, item in enumerate(update):
+        if len(order_dict[item]) != 0:
+            for next in order_dict[item]:
+                if next not in new_update and next in update:
+                    new_update.append(next)
+        if item not in new_update:
+            new_update.append(item)
+    return reordered(new_update)
+
+
+ordered_tuples = []
+
+order_dict = defaultdict(list)
+
+updates = []
+for line in data:
+    if len(line) == 5:
+        first, next = map(int, line.split("|"))
+        ordered_tuples.append((first, next))
+        order_dict[next].append(first)
+    elif line != "":
+        updates.append([*map(int, line.split(","))])
+
+middle_sum = 0
+middle_sum_corrected = 0
+i = 0
+for update in updates:
+    if isOrdered(update):
+        middle_sum += update[len(update) // 2]
+        print(i, update)
+    else:
+        new_update = reordered(update)
+        assert isOrdered(new_update)
+        middle_sum_corrected += new_update[len(new_update) // 2]
+    i += 1
+
+
+print(middle_sum)
+
+print(middle_sum_corrected)
