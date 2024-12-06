@@ -12,6 +12,7 @@ fn bench_part2(c: &mut Criterion) {
     let output = part2(input);
     let expected = include_str!("./output-2.txt");
     check_result(output, expected, 2);
+    //
 }
 
 criterion_group!(benches, bench_part2);
