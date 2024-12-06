@@ -265,7 +265,7 @@ unsafe fn magic_the_gathering(s: &[u8]) -> u32 {
     // NN|N N|NN |NN| NN|N
     // 30 bytes per iteration
 
-    let ITERATIONS = 6 * 1176 / 30;
+    const ITERATIONS: usize = 6 * 1176 / 30;
     for i in 0..ITERATIONS {
         let chunk = (start.add(30 * i) as *const u8x32).read_unaligned();
         let digits = chunk - ascii_zero;
