@@ -276,15 +276,15 @@ unsafe fn magic_the_gathering(s: &[u8]) -> u32 {
         .into();
 
         for i in 0..2 {
-            let ptr = &mut PTRS[nums[i * 2] as usize];
+            let ptr = PTRS.get_unchecked_mut(nums[i * 2] as usize);
             (*ptr).write(nums[i * 2 + 1] as u32);
             (*ptr) = (*ptr).add(1);
-            let ptr = &mut PTRS[nums[9 + i * 2] as usize];
+            let ptr = PTRS.get_unchecked_mut(nums[9 + i * 2] as usize);
             (*ptr).write(nums[9 + i * 2 + 1] as u32);
             (*ptr) = (*ptr).add(1);
         }
 
-        let ptr = &mut PTRS[nums[4] as usize];
+        let ptr = PTRS.get_unchecked_mut(nums[4] as usize);
         (*ptr).write(nums[8] as u32);
         (*ptr) = (*ptr).add(1);
     }
@@ -294,7 +294,7 @@ unsafe fn magic_the_gathering(s: &[u8]) -> u32 {
     for _ in 0..LEFTOVER {
         let a = start.add(0).read() as u32 * 10 + start.add(1).read() as u32 - (0x30 * 10 + 0x30);
         let b = start.add(3).read() as u32 * 10 + start.add(4).read() as u32 - (0x30 * 10 + 0x30);
-        let ptr = &mut PTRS[a as usize];
+        let ptr = PTRS.get_unchecked_mut(a as usize);
         (*ptr).write(b);
         (*ptr) = (*ptr).add(1);
         start = start.add(6);
@@ -312,7 +312,7 @@ unsafe fn magic_the_gathering(s: &[u8]) -> u32 {
     loop {
         let chunk = (start as *const u8x32).read_unaligned();
         let pos = (chunk.simd_eq(newline).to_bitmask() as u32 & !1).trailing_zeros();
-        let digits = (chunk - ascii_zero) & MASKS[pos as usize];
+        let digits = (chunk - ascii_zero) & *MASKS.get_unchecked(pos as usize);
         let nums: u16x16 = _mm256_maddubs_epi16(
             _mm256_shuffle_epi8(digits.into(), rules_shuffle.into()),
             mul.into(),
@@ -336,7 +336,7 @@ unsafe fn magic_the_gathering(s: &[u8]) -> u32 {
 
             for i in 0..n {
                 let page = pages.add(i as usize).read();
-                let curr = (&RULES.0[page as usize]).as_ptr() as *const u32x8;
+                let curr = RULES.0.get_unchecked(page as usize).as_ptr() as *const u32x8;
 
                 let index = i32x8::splat(i as i32);
                 let a: u32x8 = _mm256_i32gather_epi32::<4>(
@@ -521,15 +521,15 @@ unsafe fn mtg(s: &[u8]) -> u32 {
         .into();
 
         for i in 0..2 {
-            let ptr = &mut PTRS2[nums[i * 2] as usize];
+            let ptr = PTRS2.get_unchecked_mut(nums[i * 2] as usize);
             (*ptr).write(nums[i * 2 + 1] as u32);
             (*ptr) = (*ptr).add(1);
-            let ptr = &mut PTRS2[nums[9 + i * 2] as usize];
+            let ptr = PTRS2.get_unchecked_mut(nums[9 + i * 2] as usize);
             (*ptr).write(nums[9 + i * 2 + 1] as u32);
             (*ptr) = (*ptr).add(1);
         }
 
-        let ptr = &mut PTRS2[nums[4] as usize];
+        let ptr = PTRS2.get_unchecked_mut(nums[4] as usize);
         (*ptr).write(nums[8] as u32);
         (*ptr) = (*ptr).add(1);
     }
@@ -539,7 +539,7 @@ unsafe fn mtg(s: &[u8]) -> u32 {
     for _ in 0..LEFTOVER {
         let a = start.add(0).read() as u32 * 10 + start.add(1).read() as u32 - (0x30 * 10 + 0x30);
         let b = start.add(3).read() as u32 * 10 + start.add(4).read() as u32 - (0x30 * 10 + 0x30);
-        let ptr = &mut PTRS2[a as usize];
+        let ptr = PTRS2.get_unchecked_mut(a as usize);
         (*ptr).write(b);
         (*ptr) = (*ptr).add(1);
         start = start.add(6);
@@ -561,7 +561,7 @@ unsafe fn mtg(s: &[u8]) -> u32 {
     loop {
         let chunk = (start as *const u8x32).read_unaligned();
         let pos = (chunk.simd_eq(newline).to_bitmask() as u32 & !1).trailing_zeros();
-        let digits = (chunk - ascii_zero) & MASKS[pos as usize];
+        let digits = (chunk - ascii_zero) & *MASKS.get_unchecked(pos as usize);
         let nums: u16x16 = _mm256_maddubs_epi16(
             _mm256_shuffle_epi8(digits.into(), rules_shuffle.into()),
             mul.into(),
@@ -585,7 +585,7 @@ unsafe fn mtg(s: &[u8]) -> u32 {
 
             for i in 0..n {
                 let page = pages.add(i as usize).read();
-                let curr = (&RULES2.0[page as usize]).as_ptr() as *const u32x8;
+                let curr = RULES2.0.get_unchecked(page as usize).as_ptr() as *const u32x8;
 
                 let index = i32x8::splat(i as i32);
                 let a: u32x8 = _mm256_i32gather_epi32::<4>(
@@ -615,7 +615,7 @@ unsafe fn mtg(s: &[u8]) -> u32 {
             if !valid {
                 for i in 0..n {
                     let page = pages.add(i as usize).read();
-                    let curr = (&RULES2.0[page as usize]).as_ptr() as *const u32x8;
+                    let curr = RULES2.0.get_unchecked(page as usize).as_ptr() as *const u32x8;
                     let empty_rule = u32x8::splat(EMPTY_RULE);
                     let a: u32x8 = _mm256_i32gather_epi32::<4>(
                         indexes as *const i32,
