@@ -1,5 +1,5 @@
 use core::slice;
-use std::mem::transmute;
+use std::mem::{transmute, MaybeUninit};
 
 use super::*;
 
@@ -143,7 +143,7 @@ const MASKS: [u8x32; 33] = [
 
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn magic_the_gathering(s: &[u8]) -> u32 {
-    let mut RULES: Rules = Rules([[0; 32]; 100]);
+    let mut RULES: Rules = MaybeUninit::uninit().assume_init();
     let mut PTRS: [*mut u32; 100] = unsafe {
         [
             &mut RULES.0[0] as *mut u32,
@@ -248,7 +248,7 @@ unsafe fn magic_the_gathering(s: &[u8]) -> u32 {
             &mut RULES.0[99] as *mut u32,
         ]
     };
-    let mut SCRATCH: [u32; 512] = [0; 512];
+    let mut SCRATCH: [u32; 512] = MaybeUninit::uninit().assume_init();
     let mut INDEXES: [u32; 100 * 512] = [0x7f7f7f7f; 100 * 512];
 
     let start = s.as_ptr().sub(1);
@@ -389,7 +389,7 @@ pub fn part1(s: &str) -> impl Display {
 
 #[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
 unsafe fn mtg(s: &[u8]) -> u32 {
-    let mut RULES2: Rules = Rules([[0; 32]; 100]);
+    let mut RULES2: Rules = MaybeUninit::uninit().assume_init();
     let mut PTRS2: [*mut u32; 100] = [
         &mut RULES2.0[0] as *mut u32,
         &mut RULES2.0[1] as *mut u32,
@@ -492,7 +492,7 @@ unsafe fn mtg(s: &[u8]) -> u32 {
         &mut RULES2.0[98] as *mut u32,
         &mut RULES2.0[99] as *mut u32,
     ];
-    let mut SCRATCH2: [u32; 512] = [0; 512];
+    let mut SCRATCH2: [u32; 512] = MaybeUninit::uninit().assume_init();
     const EMPTY_RULE: u32 = 0x7f7f7f7f;
     let mut INDEXES2: [u32; 100 * 512] = [EMPTY_RULE; 100 * 512];
 
