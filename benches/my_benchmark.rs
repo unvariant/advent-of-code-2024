@@ -32,7 +32,7 @@ pub fn day5(criterion: &mut Criterion) {
     criterion.bench_function("day5/part1", |b| b.iter(|| day4::part1(black_box(s))));
     // criterion.bench_function("day5/part2", |b| b.iter(|| day4::part2(black_box(s))));
     let output = day5::part1(s);
-    assert_eq!(output.to_string(), "0");
+    assert_eq!(output.to_string(), "6051");
     let output = day5::part2(s);
     assert_eq!(output.to_string(), "0");
 }
